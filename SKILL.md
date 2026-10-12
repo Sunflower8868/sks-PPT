@@ -2,7 +2,7 @@
 name: sks-nav-html-template
 title: "三棵树导航式汇报模板（HTML 交互版）"
 description: 三棵树/马上住风格的 16:9 网页汇报模板——左侧绿色导航栏（含二级子项）、右上角 logo + 两行标语、PPT 式缩略图导航、全屏放映模式（含全屏失败降级与「浏览器打开」逃生口）、悬浮目录（点标题跳页）、章节可增删改、选中态白底+绿三角、全元素可点选可拖动、localStorage 持久化，单文件自包含可直接发给同事。当用户要「三棵树风格汇报页」「带左侧导航的 HTML 汇报」「可翻页可编辑的网页版 PPT」「要放映模式/悬浮目录」「马上住模板」时使用本技能。
-version: 1.9.27
+version: 1.9.28
 agent_created: true
 ---
 
@@ -68,9 +68,9 @@ agent_created: true
 
 | 文件 | 用途 |
 |---|---|
-| `三棵树汇报模板.html` | **成品**（v1.9.27，≈1.30MB，已内联 logo + pptxgenjs + html2canvas + jsPDF），直接复制改名即可用 |
+| `三棵树汇报模板.html` | **成品**（v1.9.28，≈1.30MB，已内联 logo + pptxgenjs + html2canvas + jsPDF），直接复制改名即可用 |
 | `三棵树汇报模板-v1.5-备份.html` | 旧成品留档（v1.5.x，≈119KB，无 PPT/PDF 导出能力），**不要用**，仅备查 |
-| `template.html` | 源模板（引用 `assets/`；**注意：这是 v1.5.x 遗留源码**，`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.27 成品） |
+| `template.html` | 源模板（引用 `assets/`；**注意：这是 v1.5.x 遗留源码**，`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.28 成品） |
 | `assets/nav_logo_x2.png` | 侧栏 logo（原稿内嵌图放大版，640×306） |
 | `assets/skshu_logo.png` | 右上角品牌 logo（官网 SVG 转 PNG） |
 | `scripts/pack.py` | 把 `template.html` 打包成自包含单文件 |
@@ -149,7 +149,7 @@ extra:{ line1w:98, line2w:121, triColor:'#007F00', lineColor:'#FFFFFF', line1h:2
 - 「**💾 保存**（Ctrl+S）」立即写盘，其实每次改动都已自动保存到 `localStorage`
 - 「＋ 新增章节」弹窗**选模板页**，新页面沿用该页的 `h / pt / 子项行数`；新增 / 删除 / 拖拽排序后章节自动按 `01 / 02 / 03…` 重编号，子项前缀跟着父章节走（如 3.1、3.2）
 - 默认打开即为 **5 个主章节，每章 1 个子项**（共 10 页），左栏第一项上方 / 最后一项下方各有一根白线
-- 顶部工具条：编辑模式 / 撤销 / 保存 / 恢复默认 / 导出 PDF（纯前端 html2canvas+jsPDF·原样多页·无页码条·无页眉页脚·无页缝·图表保留·动画强制终态）/ **导出 PPT（可编辑版·保真 + 可改字；v1.9.21 起只留这一种，已删除冗余的「图片版」）** / ⬡ 图形·图标（内置 15 矢量图标 + 上传图片）
+- 顶部工具条：编辑模式 / 撤销 / 保存 / 恢复默认 / 导出 PDF（纯前端 html2canvas+jsPDF·原样多页·无页码条·无页眉页脚·无页缝·图表保留·动画强制终态）/ **导出 PPT（全可编辑·原生对象；v1.9.28 起：图表=原生 chart 可双击改数据、表格=原生 tbl 可逐格改字、卡片/KPI/横幅=原生形状+文字、logo=内嵌图片、侧栏=绿底矩形+文字，全部在 PowerPoint 里点得动改得了）** / ⬡ 图形·图标（内置 15 矢量图标 + 上传图片）
 - `fit()` 自适应窗口缩放；键盘 ←/→ 翻页
 
 ### 放映模式（v1.2 新增）
@@ -354,6 +354,17 @@ s.style.transform=(Math.abs(k-1)>0.002)?`scale(${k})`:'none';
     - **坑②（探针注入踩空）**：本文件正文里还有一处 `</body>` 字符串，`html.replace("</body>", …)` 会命中它、把注入脚本插进 jsPDF 块内**永不执行** → 必须用 `html.rfind("</body>")` 定位真正的闭合标签。
     - 验证：真实 Chrome 无头 `loadSample → exportPptEditable` → `data-pp` 报 `OK wrote=… b64len=1532804`；解码后 `zipfile.testzip()` 通过、5 页、每页 1 张整页背景图 + 原生文本段（16/26/27/23/13）；抽出各页背景图目视：**5 个章节标签全在**、环形图（图例 咨询焕新192/施工交付168/售后维保120、中心合计480、35/25/40%）与折线图（Q1–Q4，1.2→2.3 亿，绿色渐变+数据点）颜色/图标/图表完整。
     - **补充（v1.9.20 实测订正）**：图表文字**用的是 SVG `fill` 属性、不是 CSS `color`**（`makeChart` 里 `<text fill="#243a2a">` 等），所以 `color:transparent` 本就盖不到它——那条 `#elContent .chart{color:#000}` 其实是**冗余**（实测环形图白字 `35%/25%/40%` 未被改黑，证明它对 `fill` 无效）。留着无害，但别以为它「救了图表」；真正的原因是 SVG 用 fill。
+
+24. **导出「可编辑 PPT」= 一张图片，用户要「全部可编辑」（v1.9.28 回归原生对象）**：用户反馈「可编辑 PPT 导出来怎么是图片」——根因是 v1.9.19 起走「整页截图打底 + 只叠文字」混合式，图表/卡片/表格/logo 全烤死在背景图里，PowerPoint 里点不动，观感就是「一张图」。用户明确要**全部元素都能原生编辑**（图表双击改数据、表格逐格改字、卡片/KPI/logo 都点得动）。
+    **修法（弃混合式，改纯原生对象重建）**：
+    - **删掉整页 html2canvas 截图**，改画纯色背景 `FCFDFC` + 原生侧栏：`elBg` 绿底 `addShape('rect',{fill:007F00})`；`elNavLogo` 的 `<img src=data:image/png;base64…>` 直接 `ps.addImage({data:logo.src})` 内嵌。
+    - `_ppWalk(ps,content,R,false)`（**skipVisual=false**，让形状底块也画）。
+    - **表格**改走 `_ppTable` 原生 `<a:tbl>`：`_ppWalk` 开头 `if(root.tagName==='TABLE'){ _ppTable(...) }`（旧代码这里是 `return` 跳过）。
+    - **图表**新增 `_ppChart(slide,wrap,R)`：读 `.chart-wrap` 的 `data-chart`（`makeChart` 存的 `{type,data,opts}`），用 pptxgenjs `slide.addChart()` 原生图表对象重建——`bar/line/pie/doughnut/radar` 直接对应，`area→line`、`gauge→doughnut(值+剩余)`、`divergingBar→bar`；可在 PowerPoint 双击改数据。
+    - **过渡页 `.rc-cover` 系列**加专门分支（章节号/标题/绿线/导读徽章/子项卡片），避免丢失徽章底色与子项裸文本。
+    - **坑（`.rc-col-chart` 被 `.rc-col` 提前截胡）**：`cls.indexOf('rc-col')>=0` 会**命中 `rc-col-chart`**（含 `rc-col` 子串），导致图表分支永远走不到、`chart=0`。必须把 `.rc-col-chart` 判断提到 `.rc-2col`/`.rc-col` **之前**。同理 `.rc-cover-subs` 会被 `.rc-cover-sub` 前缀误命中，须先判 `subitem`→`subs`→`sub`。
+    - **坑（混合内容丢裸文本）**：`_ppWalk` 用 `root.children` 只遍历元素节点，`<b>1.1</b>产品矩阵…` 里 `<b>` 之外的裸文本「产品矩阵…」会丢。过渡页子项卡片改用 `ch.innerText` 取全量文字。
+    - **验证**：真实 Chromium 触发 `exportPptEditable`，`pptx.write('base64')` 抓回解码 → `zipfile` 解析：10 个内容页各 1 个 `chartRef`、5 个含表格页 `tbl=1`、每页 `pic=2`（侧栏 logo + 右上 logo）、侧栏绿底 `rect fill=007F00`、图表类型 radar/line/bar/doughnut 映射正确、gauge 值 `67/33` 正确。**PowerPoint COM 导出 PNG 被公司 EDR 加密（文件头非 `\x89PNG`），无法目视校验**，只能 XML 层断言。
 
 24. **导出「可编辑 PPT」偶发文字错位 / 重叠（乱码，v1.9.20 修复）**：可编辑版叠文字时，坐标换算的**基准**早期是「进入本页循环时取一次 `sr=slideEl.getBoundingClientRect()`」，而元素矩形在 `html2canvas` **之后**才测量。二者之间只要页面发生**任何重排**（字体加载、滚动条出现、`html2canvas` 克隆体回流、甚至**测试探针往 body 追加了一个巨大的截图 `<img>`**），`sr` 就**过期**：元素与舞台不再同一坐标系 → 该页**所有文字整体偏移、互相重叠**（典型表现：某一页标题/品牌行跑到左下角挤成一团）。
     - **修法（根治）**：`R()` 里**每个元素都重新取一次当下舞台矩形**——`var s=slideEl.getBoundingClientRect(); if(s.width<2||s.height<2) s=sr; var r=el.getBoundingClientRect();`。「元素矩形」与「舞台矩形」在同一次**同步**调用里取得 → 二者必属同一坐标系；无重排时 `s≡sr`（输出不变），有重排时也不再错位。
