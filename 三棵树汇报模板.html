@@ -3324,9 +3324,73 @@ function _ppChart(slide,wrap,R){
     }
   }catch(e){ /* chart 失败则回退为 SVG 转 PNG 图片，保证不丢图 */ try{ if(typeof _ppSvgPng==='function'){ var svg=wrap.querySelector('svg'); if(svg){ _ppSvgPng(svg).then(function(p){ if(p) slide.addImage({data:p,x:r.x,y:r.y,w:w,h:h}); }); } } }catch(e2){} }
 }
+/* 叶子块：画形状/文字后不再向下递归到同类块（避免作为 root 被父级递归进入时无限递归）。
+   容器块（rc-col-chart / rc-2col / rc-col / rc-cover / rc-cover-subs）仍走循环体内的递归分支。 */
+async function _ppLeafBlock(slide, ch, R, skipVisual){
+  var cls=(typeof ch.className==='string')?ch.className:(ch.getAttribute?ch.getAttribute('class')||'':'');
+  if(cls.indexOf('rc-cover-subitem')>=0){
+    var ri=R(ch);
+    if(!skipVisual) slide.addShape('roundRect',{x:ri.x,y:ri.y,w:ri.w,h:ri.h,fill:{color:'FFFFFF'},line:{color:'CFE0C8',width:1},rectRadius:0.08});
+    var it=ch.innerText.replace(/\s+/g,' ').trim();
+    if(it) _ppText(slide,it,ri,ch,{single:true,color:'243A2A',align:'center',bold:false});
+    return true;
+  }
+  if(cls.indexOf('rc-cover-sub')>=0){
+    var rs=R(ch);
+    if(!skipVisual){ slide.addShape('roundRect',{x:rs.x,y:rs.y,w:rs.w,h:rs.h,fill:{color:'EAF5EA'},line:{type:'none'},rectRadius:0.06}); slide.addShape('rect',{x:rs.x,y:rs.y,w:0.05,h:rs.h,fill:{color:'007F00'}}); }
+    var st=ch.innerText.replace(/\s+/g,' ').trim();
+    if(st) _ppText(slide,st,rs,ch,{single:true,color:'1F6B2E',align:'left',bold:true,valign:'middle',delta:[.14,0,.16,0]});
+    return true;
+  }
+  if(cls.indexOf('rc-cover-title')>=0){ _ppTxt(slide,ch,R,{color:'243A2A',bold:true}); return true; }
+  if(cls.indexOf('rc-cover-num')>=0){ _ppTxt(slide,ch,R,{color:'007F00',bold:true}); return true; }
+  if(cls.indexOf('rc-cover-line')>=0){ if(!skipVisual){ var rl2=R(ch); slide.addShape('rect',{x:rl2.x,y:rl2.y,w:rl2.w,h:rl2.h,fill:{color:'007F00'}}); } return true; }
+  if(cls.indexOf('rc-banner')>=0){
+    var rb=R(ch);
+    if(!skipVisual){ slide.addShape('roundRect',{x:rb.x,y:rb.y,w:rb.w,h:rb.h,fill:{color:'F5FBF3'},line:{color:'CFE6D2',width:1},rectRadius:0.04}); slide.addShape('rect',{x:rb.x,y:rb.y,w:0.06,h:rb.h,fill:{color:'007F00'}}); }
+    var bt=ch.querySelector('.rc-banner-t'), bx=ch.querySelector('.rc-banner-x');
+    if(bt){ var tr=R(bt); slide.addShape('roundRect',{x:tr.x,y:tr.y,w:tr.w,h:tr.h,fill:{color:'007F00'},rectRadius:0.03}); slide.addText(bt.textContent.trim(),{x:tr.x,y:tr.y,w:tr.w,h:tr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(bt).fontSize),color:'FFFFFF',align:'center',valign:'middle',bold:true}); }
+    if(bx){ _ppTxt(slide,bx,R,{color:_ppRgb(getComputedStyle(bx).color)||'243A2A',align:'left',valign:'middle'}); }
+    return true;
+  }
+  if(cls.indexOf('rc-card')>=0){
+    var rc=R(ch);
+    if(!skipVisual) slide.addShape('roundRect',{x:rc.x,y:rc.y,w:rc.w,h:rc.h,fill:{color:'FFFFFF'},line:{color:'E3ECE1',width:1},rectRadius:0.07});
+    var chd=ch.querySelector('.rc-card-h');
+    if(chd){ var hr=R(chd); slide.addText(chd.textContent.trim(),{x:hr.x,y:hr.y,w:hr.w,h:hr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(chd).fontSize),color:'007F00',bold:true,align:'left',valign:'middle',margin:0}); }
+    var inner=Array.from(ch.children);
+    for(var ci=0;ci<inner.length;ci++){ if(inner[ci]===chd) continue; await _ppWalk(slide,inner[ci],R,skipVisual); }
+    return true;
+  }
+  if(cls.indexOf('rc-kpis')>=0){
+    var kpis=Array.from(ch.querySelectorAll('.rc-kpi'));
+    for(var ki=0;ki<kpis.length;ki++){ var kpi=kpis[ki]; if(!_ppVis(kpi)) continue; var kr=R(kpi);
+      if(!skipVisual) slide.addShape('roundRect',{x:kr.x,y:kr.y,w:kr.w,h:kr.h,fill:{color:'F5FBF3'},line:{color:'CFE6D2',width:1},rectRadius:0.07});
+      var v=kpi.querySelector('.v'), l=kpi.querySelector('.l');
+        if(v){ var vr=R(v); slide.addText(v.textContent.trim(),{x:vr.x,y:vr.y,w:vr.w,h:vr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(v).fontSize),color:'007F00',bold:true,align:'center',valign:'middle',margin:0}); }
+        if(l){ var lr=R(l); slide.addText(l.textContent.trim(),{x:lr.x,y:lr.y,w:lr.w,h:lr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(l).fontSize),color:_ppRgb(getComputedStyle(l).color)||'6A756C',align:'center',valign:'middle',margin:0}); }
+    }
+    return true;
+  }
+  if(cls.indexOf('rc-ul')>=0){ var ru=R(ch); var paras=Array.from(ch.children).map(function(li){ return {text:_ppNodeRuns(li), options:{bullet:{indent:14}, paraSpaceAfter:3}}; }); slide.addText(paras,{x:ru.x,y:ru.y,w:ru.w,h:ru.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:_ppRgb(getComputedStyle(ch).color)||'33473A',align:'left',valign:'top',margin:0,lineSpacingMultiple:_ppLine(ch),wrap:true}); return true; }
+  if(cls.indexOf('rc-note')>=0){ _ppTxt(slide,ch,R,{color:_ppRgb(getComputedStyle(ch).color)||'7A8A7E'}); return true; }
+  if(cls.indexOf('rc-insight')>=0){
+    var ri2=R(ch);
+    if(!skipVisual) slide.addShape('roundRect',{x:ri2.x,y:ri2.y,w:ri2.w,h:ri2.h,fill:{color:'F2F8F2'},line:{color:'DBEAD9',width:1},rectRadius:0.06});
+    var ih=ch.querySelector('.rc-insight-h');
+    if(ih){ var ir2=R(ih); if(!skipVisual) slide.addShape('ellipse',{x:ir2.x,y:ir2.y+(ir2.h-0.06)/2,w:0.06,h:0.06,fill:{color:'4CAF50'},line:{type:'none'}}); _ppText(slide,ih.textContent.trim(),ir2,ih,{single:true,color:'007F00',bold:true,align:'left',delta:[0.1,0,0,0]}); }
+    var iul=ch.querySelector('ul');
+    if(iul){ var iur=R(iul); var iparas=Array.from(iul.children).map(function(li){ return {text:li.innerText.replace(/\s+/g,' ').trim(), options:{bullet:{indent:14}}}; }); _ppText(slide, iparas, iur, iul, {align:'left',valign:'top',color:'3A4A40'}); }
+    return true;
+  }
+  return false;
+}
 async function _ppWalk(slide,root,R,skipVisual){
   /* 全可编辑：表格无论作为 root 还是子元素，都转原生 <a:tbl>（可逐格改字） */
   if(root && root.tagName==='TABLE'){ if(!skipVisual) _ppTable(slide,root,R); return; }
+  /* 块级元素可能作为 root 被父级（如 rc-card）递归进入，必须在顶层识别，否则 li 文本会被整段丢弃。
+     _ppLeafBlock 是 async（内部要 await 递归），必须 await，否则返回的是 Promise（恒为真）会直接 return 掉整层内容 */
+  if(await _ppLeafBlock(slide, root, R, skipVisual)) return;
   var kids=Array.from(root.children);
   for(var k=0;k<kids.length;k++){
     var ch=kids[k];
@@ -3346,57 +3410,9 @@ async function _ppWalk(slide,root,R,skipVisual){
       continue;
     }
     if(cls.indexOf('rc-2col')>=0||cls.indexOf('rc-col')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
-    /* 章节过渡页（封面）：原生导出保真 */
-    if(cls.indexOf('rc-cover-subitem')>=0){
-      // 子项入口卡片：白底圆角卡片 + 完整文字（含 <b> 前缀 + 裸文本）
-      var ri=R(ch);
-      if(!skipVisual) slide.addShape('roundRect',{x:ri.x,y:ri.y,w:ri.w,h:ri.h,fill:{color:'FFFFFF'},line:{color:'CFE0C8',width:1},rectRadius:0.08});
-      var it=ch.innerText.replace(/\s+/g,' ').trim();
-      if(it) slide.addText(it,{x:ri.x,y:ri.y,w:ri.w,h:ri.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:'243A2A',align:'center',valign:'middle',bold:false});
-      continue;
-    }
     if(cls.indexOf('rc-cover-subs')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
-    if(cls.indexOf('rc-cover-sub')>=0){
-      // 导读徽章：浅绿底 + 深绿字 + 左侧竖条
-      var rs=R(ch);
-      if(!skipVisual){ slide.addShape('roundRect',{x:rs.x,y:rs.y,w:rs.w,h:rs.h,fill:{color:'EAF5EA'},line:{type:'none'},rectRadius:0.06}); slide.addShape('rect',{x:rs.x,y:rs.y,w:0.05,h:rs.h,fill:{color:'007F00'}}); }
-      var st=ch.innerText.replace(/\s+/g,' ').trim();
-      if(st) slide.addText(st,{x:rs.x+0.1,y:rs.y,w:rs.w-0.1,h:rs.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:'1F6B2E',align:'left',valign:'middle',bold:true});
-      continue;
-    }
-    if(cls.indexOf('rc-cover-title')>=0){ _ppTxt(slide,ch,R,{color:'243A2A',bold:true}); continue; }
-    if(cls.indexOf('rc-cover-num')>=0){ _ppTxt(slide,ch,R,{color:'007F00',bold:true}); continue; }
-    if(cls.indexOf('rc-cover-line')>=0){ if(!skipVisual){ var rl2=R(ch); slide.addShape('rect',{x:rl2.x,y:rl2.y,w:rl2.w,h:rl2.h,fill:{color:'007F00'}}); } continue; }
     if(cls.indexOf('rc-cover')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
-    if(cls.indexOf('rc-banner')>=0){
-      var rb=R(ch);
-      if(!skipVisual){ slide.addShape('roundRect',{x:rb.x,y:rb.y,w:rb.w,h:rb.h,fill:{color:'F5FBF3'},line:{color:'CFE6D2',width:1},rectRadius:0.04}); slide.addShape('rect',{x:rb.x,y:rb.y,w:0.06,h:rb.h,fill:{color:'007F00'}}); }
-      var bt=ch.querySelector('.rc-banner-t'), bx=ch.querySelector('.rc-banner-x');
-      if(bt){ var tr=R(bt); slide.addShape('roundRect',{x:tr.x,y:tr.y,w:tr.w,h:tr.h,fill:{color:'007F00'},rectRadius:0.03}); slide.addText(bt.textContent.trim(),{x:tr.x,y:tr.y,w:tr.w,h:tr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(bt).fontSize),color:'FFFFFF',align:'center',valign:'middle',bold:true}); }
-      if(bx){ _ppTxt(slide,bx,R,{color:_ppRgb(getComputedStyle(bx).color)||'243A2A',align:'left',valign:'middle'}); }
-      continue;
-    }
-    if(cls.indexOf('rc-card')>=0){
-      var rc=R(ch);
-      if(!skipVisual) slide.addShape('roundRect',{x:rc.x,y:rc.y,w:rc.w,h:rc.h,fill:{color:'FFFFFF'},line:{color:'E3ECE1',width:1},rectRadius:0.07});
-      var chd=ch.querySelector('.rc-card-h');
-      if(chd){ var hr=R(chd); slide.addText(chd.textContent.trim(),{x:hr.x,y:hr.y,w:hr.w,h:hr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(chd).fontSize),color:'007F00',bold:true,align:'left',valign:'middle'}); }
-      var inner=Array.from(ch.children);
-      for(var ci=0;ci<inner.length;ci++){ if(inner[ci]===chd) continue; await _ppWalk(slide,inner[ci],R,skipVisual); }
-      continue;
-    }
-    if(cls.indexOf('rc-kpis')>=0){
-      var kpis=Array.from(ch.querySelectorAll('.rc-kpi'));
-      for(var ki=0;ki<kpis.length;ki++){ var kpi=kpis[ki]; if(!_ppVis(kpi)) continue; var kr=R(kpi);
-        if(!skipVisual) slide.addShape('roundRect',{x:kr.x,y:kr.y,w:kr.w,h:kr.h,fill:{color:'F5FBF3'},line:{color:'CFE6D2',width:1},rectRadius:0.07});
-        var v=kpi.querySelector('.v'), l=kpi.querySelector('.l');
-        if(v){ var vr=R(v); slide.addText(v.textContent.trim(),{x:vr.x,y:vr.y,w:vr.w,h:vr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(v).fontSize),color:'007F00',bold:true,align:'center',valign:'middle'}); }
-        if(l){ var lr=R(l); slide.addText(l.textContent.trim(),{x:lr.x,y:lr.y,w:lr.w,h:lr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(l).fontSize),color:_ppRgb(getComputedStyle(l).color)||'6A756C',align:'center',valign:'middle'}); }
-      }
-      continue;
-    }
-    if(cls.indexOf('rc-ul')>=0){ var ru=R(ch); slide.addText(Array.from(ch.children).map(function(li){return li.innerText.replace(/\s+/g,' ').trim();}),{x:ru.x,y:ru.y,w:ru.w,h:ru.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:_ppRgb(getComputedStyle(ch).color)||'33473A',align:'left',valign:'top',bullet:{indent:14},paraSpaceAfter:3}); continue; }
-    if(cls.indexOf('rc-note')>=0){ _ppTxt(slide,ch,R,{color:_ppRgb(getComputedStyle(ch).color)||'7A8A7E'}); continue; }
+    if(await _ppLeafBlock(slide, ch, R, skipVisual)) continue;
     if(ch.children.length===0){ _ppTxt(slide,ch,R); }
     else { await _ppWalk(slide,ch,R,skipVisual); }
   }
@@ -3493,7 +3509,7 @@ async function exportPptEditable(){
   var savedCur=cur, savedEdit=document.body.classList.contains('editing'), savedPresent=document.body.classList.contains('present');
   document.body.classList.remove('editing','present');
   document.body.classList.add('exporting');
-  var slideEl=$('slide'), nav=$('nav'), logo=$('elNavLogo'), bgEl=$('elBg');
+  var slideEl=$('slide');
   var savedStyle=slideEl.getAttribute('style')||'';
   for(var i=0;i<S.pages.length;i++){
     cur=i; renderAll(); fit();
@@ -3504,21 +3520,52 @@ async function exportPptEditable(){
     slideEl.style.marginLeft='0'; slideEl.style.marginTop='0';
     var sr=slideEl.getBoundingClientRect();
     if(sr.width<2||sr.height<2) continue;
-    var R=function(el){ var s=slideEl.getBoundingClientRect(); if(s.width<2||s.height<2) s=sr; var r=el.getBoundingClientRect(); return {x:Math.max(0,(r.left-s.left)/s.width*13.333),y:Math.max(0,(r.top-s.top)/s.height*7.5),w:Math.min(13.333,r.width/s.width*13.333),h:Math.min(7.5,r.height/s.height*7.5)}; };
+    var R=_ppMakeR(slideEl);
     var ps=pptx.addSlide();
     ps.background={color:'FCFDFC'};
-    // 1) 原生侧栏：绿色底板（覆盖整个左侧导航区，取 #elBg 实时宽高与颜色）
-    if(bgEl){ var rbg=R(bgEl); ps.addShape('rect',{x:rbg.x,y:rbg.y,w:rbg.w,h:rbg.h,fill:{color:_ppRgb(getComputedStyle(bgEl).backgroundColor)||'007F00'},line:{type:'none'}}); }
-    // 2) 导航 logo：内联 base64 图片直接嵌入（可移动/缩放）
-    if(logo && logo.tagName==='IMG'){ var rl=R(logo); try{ ps.addImage({data:logo.src,x:rl.x,y:rl.y,w:rl.w,h:rl.h}); }catch(e){} }
-    // 3) 右上角品牌行 #elBrand：若含图片 logo 则嵌图，否则叠文字
-    var br=$('elBrand'); if(br){ var bimg=br.querySelector('img'); if(bimg && bimg.src && bimg.src.indexOf('data:image')===0){ var rb=R(bimg); try{ ps.addImage({data:bimg.src,x:rb.x,y:rb.y,w:rb.w,h:rb.h}); }catch(e){} } else if(br.textContent.trim()){ var rbr=R(br); ps.addText(br.textContent.trim(),{x:rbr.x,y:rbr.y,w:rbr.w,h:rbr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(br).fontSize),color:_ppRgb(getComputedStyle(br).color)||'9AA79F',align:'right',valign:'middle'}); } }
-    // 4) 页标题 #elPtitle：原生文本框（可改字）
-    var pt=$('elPtitle'); if(pt && pt.textContent.trim()){ var rpt=R(pt); ps.addText(pt.textContent.trim(),{x:rpt.x,y:rpt.y,w:rpt.w,h:rpt.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(pt).fontSize),color:_ppRgb(getComputedStyle(pt).color)||'0E5C2F',bold:true,align:'left',valign:'middle'}); }
-    // 5) 侧栏章节名：原生文本框（当前页高亮取绿、其余白），在 PowerPoint 里可改字
-    if(nav){ var navItems=nav.querySelectorAll('.item'); for(var ni=0; ni<navItems.length; ni++){ var lb=navItems[ni].querySelector('.lb'); if(!lb||!lb.textContent.trim()) continue; var ncs=getComputedStyle(lb); var rlb=R(lb); ps.addText(lb.textContent.trim(),{x:rlb.x,y:rlb.y,w:rlb.w,h:rlb.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(ncs.fontSize),color:_ppRgb(ncs.color)||'FFFFFF',bold:(ncs.fontWeight==='bold'||ncs.fontWeight==='700'),align:'left',valign:'middle',wrap:false}); } }
-    // 6) 正文：原生形状 + 原生文字 + 原生表格 + 原生图表（全可编辑，skipVisual=false）
+    /* ===== 按「图层顺序」逐层铺。顺序不能乱：白胶囊必须早于章节文字，否则会把字盖住 ===== */
+    /* 1) 侧栏绿色底板（取 #elBg 实时宽高/颜色） */
+    var bgEl=$('elBg'); if(_ppVis(bgEl)) _ppRect(ps,R(bgEl),_ppRgb(getComputedStyle(bgEl).backgroundColor)||'007F00');
+    /* 2) 当前章节的白色高亮胶囊 #elPill —— 以前整块没导，导致选中章节的深绿字直接落在绿底上「看不见」 */
+    var pill=$('elPill'); if(_ppVis(pill)) _ppRound(ps,R(pill),_ppRgb(getComputedStyle(pill).backgroundColor)||'FFFFFF',.05);
+    /* 3) 侧栏 logo 下方的白色分隔线 #line1 */
+    var l1=$('line1'); if(_ppVis(l1)) _ppRect(ps,R(l1),_ppRgb(getComputedStyle(l1).backgroundColor)||'FFFFFF');
+    /* 4) 侧栏 logo 图片（内联 base64，可移动/缩放） */
+    var logo=$('elNavLogo'); if(logo&&logo.tagName==='IMG'&&String(logo.src).indexOf('data:image')===0){ var rl=R(logo); try{ ps.addImage({data:logo.src,x:rl.x,y:rl.y,w:rl.w,h:rl.h}); }catch(e){} }
+    /* 5) 侧栏文字：章节名 + 各自的子项（子项以前整块漏掉 → 「侧边栏不全」） */
+    var nav=$('nav');
+    if(nav){
+      var addNavLb=function(it){ var lb=it.querySelector('.lb'); if(!lb||!lb.textContent.trim()||!_ppVis(lb)) return; _ppTxt(ps,lb,R,{single:true}); };
+      nav.querySelectorAll('.item').forEach(addNavLb);
+      nav.querySelectorAll('.subs .sub').forEach(addNavLb);
+    }
+    /* 6) 标题下的绿色横线 #elGline */
+    var gl=$('elGline'); if(_ppVis(gl)) _ppRect(ps,R(gl),_ppRgb(getComputedStyle(gl).backgroundColor)||'007F00');
+    /* 7) 右上角品牌区：logo 图 + 两行标语（以前只嵌了图，标语整段丢失） */
+    var br=$('elBrand');
+    if(br){
+      var bimg=br.querySelector('img');
+      if(bimg&&String(bimg.src).indexOf('data:image')===0){ var rb=R(bimg); try{ ps.addImage({data:bimg.src,x:rb.x,y:rb.y,w:rb.w,h:rb.h}); }catch(e){} }
+      var sg=$('elSlogan');
+      if(sg){ sg.querySelectorAll('.l1,.l2').forEach(function(ln){ if(ln.textContent.trim()&&_ppVis(ln)) _ppTxt(ps,ln,R,{single:true}); }); }
+      else if(!bimg&&br.textContent.trim()){ _ppTxt(ps,br,R,{single:true,align:'right'}); }
+    }
+    /* 8) 页标题 #elPtitle（可改字） */
+    var pt=$('elPtitle'); if(_ppVis(pt)&&pt.textContent.trim()) _ppTxt(ps,pt,R,{single:true});
+    /* 9) 正文：原生形状 + 原生文字 + 原生表格 + 原生图表（全可编辑，skipVisual=false） */
     var content=$('elContent'); if(content){ await _ppWalk(ps,content,R,false); }
+    /* 10) 自由文本框图层 #tboxLayer（用户手动放的文本框，以前整个图层没导） */
+    var tlay=$('tboxLayer');
+    if(tlay){
+      var tbs=tlay.querySelectorAll('.tbox');
+      for(var ti=0;ti<tbs.length;ti++){
+        var tb=tbs[ti]; if(!_ppVis(tb)) continue;
+        var rtb=R(tb), tcs=getComputedStyle(tb), tbg=_ppRgb(tcs.backgroundColor);
+        if(tbg&&tbg!=='FFFFFF') _ppRound(ps,rtb,tbg,.04);
+        var tt=(tb.innerText||'').replace(/\s+/g,' ').trim();
+        if(tt) _ppText(ps,tt,rtb,tb,{delta:[.083,.062,.166,.124]});
+      }
+    }
   }
   document.body.classList.remove('exporting');   // 先解冻，末尾的 fit() 才能把屏幕缩放还原
   if(savedStyle) slideEl.setAttribute('style',savedStyle); else slideEl.removeAttribute('style');
