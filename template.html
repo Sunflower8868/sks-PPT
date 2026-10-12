@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三棵树汇报模板</title>
+<style>
+:root{
+  --green:#007F00; --seltx:#007E00; --font:'微软雅黑','Microsoft YaHei',sans-serif;
+  --ui:#f4f6f4; --ui-b:#d7ded7; --ui-t:#2c3a2e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#eceff0;font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+
+/* ---------- 工具条 ---------- */
+.bar{flex:0 0 auto;background:var(--ui);border-bottom:1px solid var(--ui-b);
+     display:flex;align-items:center;gap:8px;padding:7px 14px;flex-wrap:wrap;
+     font-size:12px;color:var(--ui-t)}
+.bar b{font-size:13px;color:var(--green);margin-right:4px}
+.btn{background:#fff;border:1px solid var(--ui-b);border-radius:5px;padding:5px 11px;
+     cursor:pointer;font-family:var(--font);font-size:12px;color:var(--ui-t)}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn.on{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.danger:hover{border-color:#c0392b;color:#c0392b}
+.sep{width:1px;height:20px;background:var(--ui-b)}
+select{padding:4px 6px;border:1px solid var(--ui-b);border-radius:5px;
+       font-family:var(--font);font-size:12px;background:#fff;color:var(--ui-t)}
+.spacer{flex:1}
+
+/* ---------- 主体：左侧页面缩略图 + 右侧舞台 ---------- */
+.main{flex:1 1 auto;display:flex;min-height:0}
+.thumbs{flex:0 0 208px;background:var(--ui);border-right:1px solid var(--ui-b);
+        overflow-y:auto;padding:10px 9px}
+.thumbs h5{font-size:11px;color:#7b867d;margin-bottom:8px;font-weight:700;
+           display:flex;justify-content:space-between;align-items:center}
+.thumb{position:relative;background:#fff;border:2px solid transparent;border-radius:5px;
+       margin-bottom:10px;cursor:pointer;padding:5px 6px 6px}
+.thumb:hover{border-color:#bcd8bb}
+.thumb.cur{border-color:var(--green);box-shadow:0 2px 8px rgba(0,127,0,.20)}
+.thumb .no{font-size:10px;color:#8b958c;font-weight:700;margin-bottom:3px}
+.thumb .tc{position:relative;width:100%;aspect-ratio:16/9;background:#FCFDFC;
+           border:1px solid #e3e8e3;overflow:hidden}
+.thumb .cap{font-size:11px;color:#3d4a40;margin-top:4px;font-weight:700;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 缩略图内的迷你元素 */
+.tc .t-bar{position:absolute;left:0;top:0;width:17%;height:100%;background:var(--green)}
+.tc .t-i{position:absolute;left:2%;width:13%;height:2.6%;background:rgba(255,255,255,.85);border-radius:1px}
+.tc .t-pill{position:absolute;left:1.5%;width:15%;height:6%;background:#fff;border-radius:1px}
+.tc .t-s{position:absolute;left:3%;width:10%;height:1.8%;background:rgba(255,255,255,.6);border-radius:1px}
+.tc .t-title{position:absolute;left:21%;top:8%;width:52%;height:8%;background:#cfe6cd;border-radius:1px}
+.tc .t-cnt{position:absolute;left:21%;top:24%;width:70%;height:54%;background:#f2f5f1;border-radius:1px}
+
+/* ---------- 舞台 ---------- */
+.stage{flex:1 1 auto;display:block;padding:0;overflow:auto;min-width:0}
+.slide{position:relative;width:1280px;height:720px;background:#FCFDFC;flex:0 0 auto;
+       box-shadow:0 6px 26px rgba(0,0,0,.16);overflow:hidden;transform-origin:top left}
+
+/* ---------- 侧栏 ---------- */
+.sb-bg{position:absolute;left:-2px;top:0;width:125px;height:720px;background:var(--green)}
+.sb-logo{position:absolute;left:10px;top:14px;width:99px;height:47px;object-fit:contain}
+.sb-line{position:absolute;background:#fff}
+#line1{left:10px;top:77px;width:98px;height:2px}
+#line2{left:0;top:442px;width:121px;height:3px}
+/* 细元素命中热区：白线只有 1~2px 高，加一圈透明热区才点得中 */
+.sb-line.el::after{content:'';position:absolute;left:-4px;right:-4px;top:-7px;bottom:-7px}
+/* 图片禁止浏览器原生拖图，否则 mousedown 被劫持、既拖不动也选不中 */
+.sb-logo,.brand img{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}
+
+/* nav 是透明容器，必须让它「不吃点击」，否则整块盖住白线 / logo / 白底 */
+.nav{position:absolute;left:0;top:0;width:124px;height:720px;z-index:2;pointer-events:none}
+.item{position:absolute;left:0;width:113px;height:28px;display:flex;align-items:center;
+      padding-left:9px;font-size:13.3px;font-weight:700;color:#fff;cursor:pointer;
+      white-space:nowrap;overflow:hidden;pointer-events:auto}
+.item.sel{color:var(--seltx);font-size:14.7px}
+/* 条目若被手动改过颜色（内联样式优先级更高），选中时也要回到绿字，否则白底上会看不见 */
+.item.sel .lb{color:var(--seltx)!important}
+.item .lb{outline:none;min-width:12px;flex:1;cursor:pointer}
+/* 左侧文字默认只读：单击＝跳页，双击＝改名（改名时才变白底绿字，给个明确的"在改"提示） */
+.item .lb[contenteditable="true"],.subs .lb[contenteditable="true"]{
+  cursor:text;background:#fff;color:var(--green);border-radius:3px;padding:0 3px;margin-left:-3px}
+.item.dragover{border-top:2px solid #fff}
+/* 编辑用的小按钮：＋子项 / ×删章节 —— 默认隐藏，只在「编辑模式」下出现（避免平时/放映时碍眼） */
+.item .acts{position:absolute;right:2px;top:3px;display:flex;gap:3px;opacity:0;
+  pointer-events:none;transition:opacity .12s;z-index:5}
+body.editing .item .acts{opacity:.55;pointer-events:auto}
+body.editing .item:hover .acts{opacity:1}
+.item .acts span{font-size:10px;color:#fff;background:rgba(0,0,0,.34);border-radius:3px;
+  padding:0 3px;cursor:pointer;line-height:13px;font-weight:700}
+.item .acts .addsub:hover{background:#008a00}
+.item .acts .del:hover{background:#c0392b}
+
+.pill{position:absolute;left:2px;width:113px;height:29px;background:#fff;border-radius:4px;z-index:1}
+.tri{position:absolute;left:103px;width:12px;height:12px;z-index:6;overflow:visible}
+.tri polygon{fill:var(--green)}
+
+/* 子项（每个章节独立一块，位置自动计算） */
+.subs{position:absolute;left:0;width:138px;font-size:10.7px;font-weight:700;color:#fff;
+      padding-left:9px;line-height:1.5;z-index:2;pointer-events:auto}
+.subs .sub{position:relative;display:flex;align-items:center;white-space:nowrap;
+           overflow:hidden;margin-bottom:3px}
+.subs .lb{outline:none;flex:1;min-width:12px;cursor:pointer}
+.subs .sdel{font-size:10px;color:#fff;background:rgba(0,0,0,.3);border-radius:3px;
+  padding:0 3px;margin-left:3px;cursor:pointer;line-height:13px;flex:none;
+  opacity:0;pointer-events:none;transition:opacity .12s}
+body.editing .subs .sdel{opacity:.55;pointer-events:auto}
+body.editing .subs .sub:hover .sdel{opacity:1}
+.subs .sdel:hover{background:#c0392b;opacity:1}
+
+/* ---------- 新增页面：选择模板页 ---------- */
+#tplPick{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:80;display:none;
+         align-items:center;justify-content:center}
+#tplPick .mbox{background:#fff;border-radius:10px;padding:18px 20px;width:430px;
+               box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:var(--font)}
+#tplPick h4{font-size:15px;color:var(--green);margin-bottom:4px}
+#tplPick .sub{font-size:12px;color:#7b867d;margin-bottom:12px;line-height:1.5}
+.tplrow{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--ui-b);
+        border-radius:6px;margin-bottom:7px;cursor:pointer;font-size:13px}
+.tplrow:hover{background:#f0f7ef;border-color:var(--green)}
+.tplrow .n{color:#8b958c;font-size:12px;width:54px;flex:none}
+.tplrow .t{flex:1;font-weight:700;color:#2c3a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tplrow .m{font-size:11px;color:#9aa49b;flex:none}
+#tplPick .row{text-align:right;margin-top:12px}
+#tplPick button{background:#fff;border:1px solid var(--ui-b);border-radius:5px;
+  padding:5px 14px;cursor:pointer;font-family:var(--font);font-size:12px;color:var(--ui-t)}
+
+/* ---------- 使用说明 / 提示 ---------- */
+#help,#ask{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:90;display:none;
+      align-items:center;justify-content:center}
+#help .mbox,#ask .mbox{background:#fff;border-radius:10px;padding:20px 22px;width:600px;max-height:84vh;
+  overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.25);font-family:var(--font)}
+#ask .mbox{width:400px}
+#help h4,#ask h4{font-size:16px;color:var(--green);margin-bottom:12px}
+#help ol{margin:0 0 6px 20px;padding:0;font-size:13px;line-height:1.9;color:#3d4a40}
+#help ol b{color:var(--green)}
+#help .row{text-align:right;margin-top:10px}
+#help button{background:var(--green);color:#fff;border:0;border-radius:5px;padding:7px 20px;
+  cursor:pointer;font-family:var(--font);font-size:12px}
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#007F00;color:#fff;
+  padding:10px 20px;border-radius:6px;font-size:13px;z-index:95;display:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.28);font-family:var(--font)}
+
+/* ---------- 右上角品牌区 ---------- */
+.brand{position:absolute;left:1013px;top:12px;display:flex;align-items:center;gap:19px}
+.brand img{width:108px;height:45px;object-fit:contain;display:block}
+/* width:103px = PPTX 的 1.07in；两行用全角空格 →「住」「漆」两端齐平；nowrap 保证不换行 */
+.brand .sg{font-weight:700;color:var(--green);line-height:1.30;width:103px;text-align:left;
+           white-space:nowrap;cursor:pointer;position:relative;padding:0}
+.brand .sg .l1{font-size:14.7px}
+.brand .sg .l2{font-size:14.7px}
+
+/* ---------- 内容区 ---------- */
+.ptitle{position:absolute;left:139px;top:59px;width:1104px;height:46px;outline:none;
+        font-size:26.7px;font-weight:700;color:var(--green);line-height:46px;
+        white-space:nowrap;overflow:hidden}
+.content{position:absolute;left:139px;top:106px;width:1104px;height:547px;
+         font-size:16px;color:#B0B8B2;outline:none;line-height:1.7}
+
+/* ---------- 底部页码圆点 ---------- */
+.pager{position:absolute;left:0;top:666px;width:1280px;display:flex;justify-content:flex-end;
+       padding-right:16px;gap:5px}
+.pager i{width:30px;height:29px;border-radius:50%;background:#ECF3E9;color:#3D7A45;
+  font-style:normal;font-size:11px;font-weight:700;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;border:1px solid #dbe7d8}
+.pager i.cur{background:var(--green);color:#fff;border-color:var(--green)}
+.pager span{align-self:center;font-size:10px;color:#9AA4A0;margin-right:2px}
+/* 放映时的章节选择器：上移避开底部控制条、加深配色保证在深色背景下看得见 */
+body.present .pager{top:638px;z-index:60;padding-right:20px}
+body.present .pager i{background:#fff;border-color:#c8d3c6;color:#3D7A45;
+  box-shadow:0 2px 7px rgba(0,0,0,.22)}
+body.present .pager i.cur{background:var(--green);color:#fff;border-color:var(--green)}
+body.present .pager span{color:#6a756c}
+.subs .sub{position:relative;padding-right:14px}
+/* 子项行（现在是独立页，可点击跳转）
+   选中时白底 pill 会盖在这一行上：文字必须转成绿色，否则白底+白字＝完全看不见。
+   这里也不再加白色半透明底，避免和 pill 的白底叠成一块脏白。 */
+.subs .sub.cur{color:var(--seltx);background:transparent;border-radius:3px}
+.subs .sub.cur .lb{color:var(--seltx)}
+
+/* ---------- 元素选中态 / 属性面板 ---------- */
+.slide.edit .el{cursor:move}
+.el.sel{outline:2px dashed #FF6B00;outline-offset:2px}
+/* 放右下角：避免挡住右上角的 logo / 标语 */
+#insp{position:fixed;right:16px;bottom:16px;top:auto;z-index:50;background:#fff;border:1px solid var(--ui-b);
+  border-radius:8px;padding:10px 12px;font-size:12px;color:var(--ui-t);display:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.14);width:196px}
+#insp h4{font-size:12px;color:var(--green);margin-bottom:7px}
+#inspPick{width:100%;margin-bottom:8px;font-size:12px;padding:3px 4px;border:1px solid var(--ui-b);
+  border-radius:5px;background:#fff;color:var(--ui-t);font-family:var(--font)}
+#insp label{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px}
+#insp input[type=color]{width:34px;height:22px;border:1px solid var(--ui-b);padding:0;background:#fff}
+#insp input[type=number]{width:56px;padding:2px 4px;border:1px solid var(--ui-b);border-radius:4px}
+#insp .row{display:flex;gap:6px;margin-top:8px}
+#insp .row button{flex:1;padding:4px 0;font-size:11px;border-radius:4px;
+  border:1px solid var(--ui-b);background:#fff;cursor:pointer;font-family:var(--font)}
+#insp .row button.rm{border-color:#e0b4ae;color:#c0392b}
+
+/* ---------- 放映模式 ---------- */
+body.present{background:#0d0f0d}
+body.present .bar,body.present .thumbs,body.present #insp{display:none!important}
+/* 放映时不该出现的编辑饰件：条目上的 ＋加子项 / ×删章节、子项右侧的 ×删子项 */
+body.present .item .acts,body.present .subs .sdel{display:none!important}
+body.present .lb{outline:none!important}          /* 去掉 contenteditable 残留下的聚焦描边 */
+body.present [contenteditable]{cursor:default}
+body.present .stage{background:#0d0f0d;overflow:hidden}
+body.present .slide{box-shadow:0 10px 50px rgba(0,0,0,.55)}
+#pvprog{position:fixed;left:0;top:0;height:3px;background:var(--green);z-index:71;
+  display:none;transition:width .22s ease}
+body.present #pvprog{display:block}
+#pvbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;
+  display:none;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border-radius:18px;
+  background:rgba(20,24,20,.74);box-shadow:0 6px 22px rgba(0,0,0,.35);
+  max-width:94vw;flex-wrap:wrap;
+  transition:opacity .3s ease;opacity:1}
+body.present #pvbar{display:flex}
+#pvbar .pb{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);
+  color:#eaf3e9;border-radius:6px;padding:5px 12px;cursor:pointer;
+  font-family:var(--font);font-size:12px}
+#pvbar .pb:hover{background:rgba(255,255,255,.22)}
+#pvbar .pb.on{background:var(--green);border-color:var(--green);color:#fff}
+#pvbar .pn{color:#cfe0cd;font-size:12px;padding:0 6px;min-width:64px;text-align:center;
+  font-variant-numeric:tabular-nums}
+
+/* ---------- 悬浮目录（普通 / 放映 通用） ---------- */
+#tocBtn{position:fixed;left:16px;bottom:56px;z-index:66;display:flex;align-items:center;gap:6px;
+  background:#fff;border:1px solid var(--ui-b);border-radius:20px;padding:7px 14px;
+  cursor:pointer;font-family:var(--font);font-size:12px;color:var(--green);font-weight:700;
+  box-shadow:0 4px 14px rgba(0,0,0,.14)}
+#tocBtn:hover{border-color:var(--green)}
+#tocBtn.on{background:var(--green);color:#fff;border-color:var(--green)}
+#tocBtn .ar{font-size:10px;color:#8b958c}
+#tocBtn.on .ar{color:rgba(255,255,255,.85)}
+#toc{position:fixed;left:16px;bottom:96px;z-index:67;width:248px;max-height:54vh;overflow:auto;
+  background:#fff;border:1px solid var(--ui-b);border-radius:9px;padding:10px 11px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);display:none;font-family:var(--font)}
+#toc.open{display:block}
+#toc h5{font-size:11px;color:#7b867d;margin-bottom:8px;display:flex;
+  justify-content:space-between;align-items:center}
+#toc h5 span{color:#b3bbb4;font-weight:400}
+.toc-i{display:flex;align-items:flex-start;gap:7px;padding:5px 7px;border-radius:5px;
+  cursor:pointer;font-size:12px;color:#3d4a40;line-height:1.35}
+.toc-i:hover{background:#f0f7ef}
+.toc-i .n{color:#9aa49b;font-size:11px;font-weight:700;flex:none;min-width:22px;
+  font-variant-numeric:tabular-nums}
+.toc-i .t{flex:1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toc-i.cur{background:var(--green);color:#fff}
+.toc-i.cur .n{color:rgba(255,255,255,.8)}
+.toc-s{padding:2px 7px 2px 35px;font-size:11px;color:#6d7a70;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toc-s:hover{color:var(--green);background:#f6faf5}
+.toc-s.cur{color:var(--green);font-weight:700}
+/* 放映时的提示不要压在底部控制条上 */
+body.present #toast{top:64px;bottom:auto;background:rgba(20,24,20,.88)}
+body.present #tocBtn{background:rgba(20,24,20,.74);color:#eaf3e9;border-color:rgba(255,255,255,.22)}
+body.present #tocBtn.on{background:var(--green);border-color:var(--green)}
+body.present #tocBtn .ar{color:#9fb0a0}
+body.present #tocBtn.on .ar{color:rgba(255,255,255,.85)}
+
+@media print{
+  body.present{background:#fff}
+  body.present .stage{background:#fff}
+  .bar,.thumbs,#insp,.item .acts,.subs .sdel,
+  #pvbar,#pvprog,#toc,#tocBtn{display:none!important}
+  .main{display:block}
+  .slide{box-shadow:none;transform:none!important;margin:0}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>三棵树汇报模板</b>
+  <button class="btn" id="bEdit">编辑模式</button>
+  <button class="btn" id="bAdd">＋ 新增章节</button>
+  <button class="btn" id="bAddSub">＋ 本章加子项</button>
+  <button class="btn danger" id="bDel">－ 删除本章节</button>
+  <button class="btn danger" id="bDelSub">－ 删除子项</button>
+  <div class="sep"></div>
+  <button class="btn" id="bUndo" title="撤销上一步（快捷键 Ctrl+Z）">↶ 撤销</button>
+  <button class="btn" id="bRedo" title="重做被撤销的一步（快捷键 Ctrl+Y 或 Ctrl+Shift+Z）">↷ 重做</button>
+  <button class="btn" id="bSave" title="立即保存到本机（其实每次改动都已自动保存）">💾 保存</button>
+  <button class="btn" id="bHelp">? 怎么用</button>
+  <div class="sep"></div>
+  <button class="btn" id="bPrev">‹ 上一页</button>
+  <button class="btn" id="bNext">下一页 ›</button>
+  <span id="curinfo"></span>
+  <div class="spacer"></div>
+  <button class="btn" id="bReset">恢复默认</button>
+  <button class="btn" id="bPdf">导出 PDF</button>
+  <button class="btn" id="bPlay">▶ 放映</button>
+</div>
+
+<div class="main">
+  <!-- 左侧：PPT 式页面缩略图（可看到所有页面，点击切换） -->
+  <div class="thumbs" id="thumbsBox">
+    <h5>所有页面 <span id="thumbCount"></span></h5>
+    <div id="thumbs"></div>
+  </div>
+
+  <!-- 右侧：舞台 -->
+  <div class="stage" id="stage">
+    <div class="slide" id="slide">
+      <div class="sb-bg el" id="elBg" data-el="bg"></div>
+      <img class="sb-logo el" id="elNavLogo" data-el="navlogo" src="assets/nav_logo_x2.png" alt="logo" draggable="false">
+      <div class="sb-line el" id="line1" data-el="line1"></div>
+      <div class="sb-line el" id="line2" data-el="line2"></div>
+      <div class="nav" id="nav"></div>
+      <div class="pill el" id="elPill" data-el="pill"></div>
+      <svg class="tri el" id="elTri" data-el="tri" viewBox="0 0 12 12" preserveAspectRatio="none">
+        <rect x="-6" y="-6" width="24" height="24" fill="transparent" pointer-events="all"/>
+        <polygon points="0,0 12,6 0,12"/>
+      </svg>
+
+      <div class="brand el" id="elBrand" data-el="brand">
+        <img src="assets/skshu_logo.png" alt="三棵树" draggable="false">
+        <div class="sg el" id="elSlogan" data-el="slogan">
+          <div class="l1" contenteditable="true" spellcheck="false">三棵树　马上住</div>
+          <div class="l2" contenteditable="true" spellcheck="false">更健康的中国漆</div>
+        </div>
+      </div>
+
+      <div class="ptitle" id="elPtitle" contenteditable="true" spellcheck="false">01  集团分析</div>
+      <div class="content" id="elContent" contenteditable="true" spellcheck="false">在此添加内容（双击直接编辑；可粘贴表格 / 图表 / 图片）</div>
+
+      <div class="pager" id="pager"></div>
+    </div>
+  </div>
+</div>
+
+<div id="insp">
+  <h4 id="inspT">属性</h4>
+  <select id="inspPick" title="被挡住时从这里选"></select>
+  <div id="inspBody"></div>
+  <div class="row"><button id="inspClose">完成</button><button class="rm" id="inspDel">删除</button></div>
+</div>
+<div id="tplPick">
+  <div class="mbox">
+    <h4>新增页面 —— 要照抄哪一页？</h4>
+    <p class="sub">新增＝把你在下面选的那一页<b>复制一份</b>插到末尾，版式（字号 / 有没有子项）跟它一样。<br>
+    新增后会自动跳到新页面，双击左栏文字即可改成你自己的编号和名称。</p>
+    <div id="tplList"></div>
+    <div class="row"><button id="tplCancel">取消</button></div>
+  </div>
+</div>
+
+<div id="help">
+  <div class="mbox">
+    <h4>怎么用</h4>
+    <ol>
+      <li><b>看所有页面 · 切页</b>：左边一栏就是<b>全部页面的缩略图</b>（跟 PPT 左侧一样），点任意一张即切到该页；当前页绿色高亮。也可以用顶部「上一页 / 下一页」或底部圆按钮。</li>
+      <li><b>新增章节</b>：点顶部「＋ 新增章节」→ 弹窗里点<b>要照抄的那一页</b> → 新页面插到末尾，版式和它一样 → 双击左栏文字改编号和名称。</li>
+      <li><b>删除章节</b>：点顶部「－ 删除本章节」删掉<b>当前这一页</b>（会先确认）。<br>
+        也可以：开「编辑模式」→ 鼠标移到左栏某条目上 → 点右侧出现的 <b>×</b> 直接删那一条。</li>
+      <li><b>加 / 删子项（1.1、2.1 这类）</b>：点顶部「＋ 本章加子项」给当前页加；
+        要删当前子项页，点顶部「<b>－ 删除子项</b>」，会弹出确认；删除后同章其余子项会<b>自动重新编号并上移</b>
+        （例如 3.1 / 3.2 / 3.3 删掉 3.2，剩下的会变成 3.1 / 3.2）。<br>
+        也可以：开「编辑模式」后，鼠标移到左栏子项行上，点右侧出现的 <b>×</b> 删。<br>
+        <b>子项就是单独一页</b>：加了之后左侧缩略图会多出一张页，<b>点左栏子项文字那一行即跳到它</b>，
+        它有自己的正文。</li>
+      <li><b>位置自动排好</b>：加 / 删子项后，下面所有章节会<b>自动往下让位或上移</b>，不会重叠，不用手动挪。
+        若你手动拖过某个条目把它钉住了，加子项时系统会自动解除钉住并重新排列（想保留手动位置请用「恢复自动排列」之外的方式微调）。</li>
+      <li><b>改文字</b>：双击任何文字直接改（不用开编辑模式）。</li>
+      <li><b>编辑模式</b>：点顶部「编辑模式」按钮开启。开启后左栏条目上才出现 <b>＋ / ×</b>，
+        并且可以<b>直接拖动</b>章节条目 / 子项区 / 两个 logo / 两根白线 / 标语；点任意元素，
+        右下角面板可改<b>位置 · 尺寸 · 颜色</b>（改完自动保存）。
+        白底、三角等被盖住不好点的元素，用右下角面板顶部的<b>「切换元素」</b>下拉一点即选中。<br>
+        <b>放映时这些 ＋ × 会自动消失</b>，画面保持干净。</li>
+      <li><b>放映模式</b>：点顶部「▶ 放映」进入<b>全屏演示</b>——工具条、缩略图全部隐藏，只留页面本身。<br>
+        键盘 <b>← →</b>（或 空格 / PageUp / PageDown）翻页，<b>Home / End</b> 跳首尾，<b>D</b> 开关目录，<b>F</b> 全屏，<b>Esc</b> 退出；
+        鼠标不动时底部控制条会自动淡出，点画面也能翻下一页。</li>
+      <li>如果点了放映后<b>浏览器边框还在</b>（地址栏没消失），说明全屏请求被浏览器挡了——多半是因为当前在
+        预览窗口里。点控制条上的 <b>⧉ 浏览器打开</b>，在新标签页里再点 <b>▶ 放映</b> 或 <b>⛶ 全屏</b> 即可。</li>
+      <li><b>悬浮目录</b>：左下角「☰ 目录」按钮，展开后列出<b>所有章节与子项</b>，点任意一条直接跳到该页，当前页绿色高亮。放映时同样可用。</li>
+      <li><b>撤销 / 重做 / 保存</b>：点「↶ 撤销」回到上一步（<b>Ctrl+Z</b>），点「↷ 重做」再往前一步（<b>Ctrl+Y</b> 或 <b>Ctrl+Shift+Z</b>）
+        —— 增删改章节、子项、改文字、拖位置都能撤也能重做；按钮变灰表示没有更多历史。「💾 保存」立即存盘（<b>Ctrl+S</b>），
+        其实每次改动都已自动保存到本机，点它只是图个安心。</li>
+      <li><b>左侧点到哪跳到哪</b>：左栏章节和子项都<b>单击即跳到那一页</b>（点文字也跳，不用去戳空白）；
+        要<b>改章节名 / 子项名</b>就<b>双击</b>，文字变白底绿字即可编辑，回车保存、Esc 取消。</li>
+      <li><b>右侧内容不影响左栏</b>：右边改<b>大标题</b>、改<b>正文</b>都只存在那一页里，<b>不会改动左栏的章节名</b>；
+        反过来，左栏章节名是唯一入口 —— 想改章节名就双击左栏。
+        （新页面还没自定义过标题时，右侧标题默认跟着左栏显示，一旦你自己改过右侧标题，它就独立了。）</li>
+      <li><b>放映时跳章节</b>：放映中页面<b>右下角有一排「跳到」圆点</b>（鼠标动一下就出现），点哪个跳哪个；
+        也可以按 <b>D</b> 开目录。点这些地方不会误触发"翻下一页"。</li>
+      <li>所有改动<b>自动存在本机浏览器</b>（每页正文独立保存），刷新不丢；点「恢复默认」回到最初的 5 章、每章 1 个子项（共 10 页）。满意后点「导出 PDF」。</li>
+    </ol>
+    <div class="row"><button id="helpClose">知道了</button></div>
+  </div>
+</div>
+
+<!-- 自定义确认框（不依赖浏览器原生 confirm，避免预览环境被拦截导致点了没反应） -->
+<div id="ask">
+  <div class="mbox">
+    <h4 id="askMsg">确认</h4>
+    <p class="sub" id="askSub"></p>
+    <div class="row"><button id="askNo">取消</button><button id="askYes" class="rm">删除</button></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<!-- 放映模式：顶部进度条 + 底部悬浮控制条（鼠标不动会自动淡出） -->
+<div id="pvprog"></div>
+<div id="pvbar">
+  <button class="pb" id="pvPrev">‹ 上一页</button>
+  <button class="pb" id="pvToc">目录</button>
+  <span class="pn" id="pvNum">1 / 1</span>
+  <button class="pb" id="pvNext">下一页 ›</button>
+  <button class="pb" id="pvFs" title="全屏放映（快捷键 F）">⛶ 全屏</button>
+  <button class="pb" id="pvWin" title="在浏览器窗口打开（预览窗内无法全屏）">⧉ 浏览器打开</button>
+  <button class="pb" id="pvExit">退出放映</button>
+</div>
+
+<!-- 悬浮目录：点小条展开，点条目直接跳页 -->
+<div id="toc">
+  <h5>目录 <span id="tocCount"></span></h5>
+  <div id="tocList"></div>
+</div>
+<button id="tocBtn">☰ 目录 <span class="ar">▲</span></button>
+
+<script>
+const PX = 96;               // 96 px = 1 inch（画布 13.333×7.5 in = 1280×720）
+const KEY = 'sks_tpl_v9';       // 每次模板结构升级都升版本，避免旧 localStorage 脏数据破坏布局
+const KEYS_ALL = ['sks_tpl_v5','sks_tpl_v6','sks_tpl_v7','sks_tpl_v8','sks_tpl_v9']; // 所有历史存档键，恢复默认时全部清掉
+
+/* 侧栏自动布局参数（英寸）：加/删子项后按这个规则重排，保证不重叠 */
+const NAV_TOP0 = 1.05;       // 第一个条目的起始 top（每章带子项后侧栏变高，整体上移才放得下）
+const ITEM_GAP = 0.254;      // 条目与下一条目之间的间距
+const SUB_TOP  = 0.10;       // 子项区距上一个条目的额外偏移
+const SUB_LH   = 0.20;       // 每个子项的行高
+const SUB_BOT  = 0.10;       // 子项区之后的额外间距
+const PILL_H   = 0.302;      // 选中态白底高度
+const TRI_H    = 0.125;      // 三角高度（12px，配 14.7px 的选中章节字）
+const SUB_TRI_H= 0.094;      // 子项三角高度（9px）：子项字只有 10.7px，按字号比例缩小才「跟文字相符」
+const PILL_L   = 2, PILL_W = 113;   // 白底 left / width（px），三角右端要跟白底右端对齐
+const SUB_PILL_H = 0.24;     // 子项选中时白底高度
+/* 两根白线锚定「第一个条目的上方 / 最后一个条目的下方」。
+   间距由原稿反推：上线 124.6px(首项顶) − 77px = 47.6px；下线 500px − 440.4px(原 7 页末项底) = 59.6px */
+const LINE_TOP_GAP = 0.25;   // 英寸：上方白线紧贴第一个条目
+const LINE_BOT_GAP = 0.621;
+
+const DEFAULT = {
+  pages:[
+    {num:'01', label:'集团分析',   subs:['1.1   子项名称'], h:0.296, pt:10},
+    {num:'02', label:'事业部分析', subs:['2.1   子项名称'], h:0.296, pt:10},
+    {num:'03', label:'经营预警',   subs:['3.1   子项名称'], h:0.377, pt:11},
+    {num:'04', label:'经营预测',   subs:['4.1   子项名称'], h:0.352, pt:10},
+    {num:'05', label:'经营建议',   subs:['5.1   子项名称'], h:0.352, pt:10}
+  ],
+  extra:{ line1w:98, line2w:121, triColor:'#007F00', lineColor:'#FFFFFF', line1h:2, line2h:3 }
+};
+let S = load();
+function newId(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+/* 统一归一：① 每页补唯一 id ② 旧的 subs 字符串数组 → 独立子页（子项现在是真正的一页） */
+function normalize(s){
+  (s.pages||[]).forEach(p=>{ if(!p.id) p.id=newId(); });
+  const out=[];
+  (s.pages||[]).forEach(p=>{
+    out.push(p);
+    if(Array.isArray(p.subs) && p.subs.length){
+      p.subs.forEach(t=>{
+        out.push({ id:newId(), num:'', label:String(t), parent:p.id, h:SUB_LH, pt:9 });
+      });
+    }
+    p.subs=[];                       // 子项不再存在父节点里，改为按 parent 关联
+  });
+  s.pages=out;
+  const ids={}; s.pages.forEach(p=>ids[p.id]=1);
+  s.pages.forEach(p=>{ if(p.parent && !ids[p.parent]) p.parent=null; });   // 父节点没了就升为主章节
+  return s;
+}
+function load(){
+  try{
+    const r=JSON.parse(localStorage.getItem(KEY));
+    if(r && r.pages && r.pages.length) return normalize(r);
+  }catch(e){}
+  try{   // 兼容 v5 及更早的存档（子项还是字符串数组，归一化后自动升级）
+    const o=JSON.parse(localStorage.getItem('sks_tpl_v5'));
+    if(o && o.pages && o.pages.length){ const n=normalize(o); save(n); return n; }
+  }catch(e){}
+  return normalize(JSON.parse(JSON.stringify(DEFAULT)));
+}
+function save(s){ try{ localStorage.setItem(KEY, JSON.stringify(s||S)); }catch(e){} }
+const $ = id => document.getElementById(id);
+let cur = 0, editMode = false;
+
+/* ---------- 撤销栈 ---------- */
+const undoStack=[], redoStack=[];
+function snap(){
+  try{ undoStack.push(JSON.stringify({s:S,c:cur})); redoStack.length=0; }catch(e){}   // 有新动作 → 重做栈作废
+  if(undoStack.length>60) undoStack.shift();
+}
+function pushRedo(){
+  try{ redoStack.push(JSON.stringify({s:S,c:cur})); }catch(e){}
+  if(redoStack.length>60) redoStack.shift();
+}
+function applySnap(o){
+  S=o.s; cur=Math.min(o.c, S.pages.length-1);
+  save(); renderAll();
+}
+function undo(){
+  if(!undoStack.length){ toast('没有可撤销的操作了'); return; }
+  releaseFocus();                       // 必须先失焦：否则 blur 回调会把当前内容写回，覆盖掉刚恢复的数据
+  pushRedo();                           // 当前状态进重做栈，之后能「重做」回来
+  applySnap(JSON.parse(undoStack.pop())); toast('已撤销一步（Ctrl+Y 可重做）');
+}
+function redo(){
+  if(!redoStack.length){ toast('没有可重做的操作了'); return; }
+  releaseFocus();
+  try{ undoStack.push(JSON.stringify({s:S,c:cur})); }catch(e){}
+  applySnap(JSON.parse(redoStack.pop())); toast('已重做一步');
+}
+
+/* ---------- 自动布局：算出每个章节 / 子项的 top ----------
+   返回 {id:{top,h,subsTop,...}}。推进基准用「实际落位」而不是理想流，
+   这样：① 加了子项，下方章节一定跟着下移 ② 手动拖过的条目也不会和别人重叠 */
+function layout(){
+  const M={};
+  let at=NAV_TOP0;
+  S.pages.forEach((p,i)=>{
+    if(p.parent) return;                                  // 子页在父条目下方单独排
+    const h=p.h||0.296;
+    const kids=[]; S.pages.forEach((q,j)=>{ if(q.parent===p.id) kids.push(j); });
+    const nsub=kids.length;
+    const fixed = !!(p.fixed && p.top!=null);
+    const top = fixed ? p.top : at;
+    let subsTop=null;
+    if(nsub) subsTop = (p.fixedSub && p.subsTop!=null) ? p.subsTop : (top + h + SUB_TOP);
+    const segH = nsub ? (h + SUB_TOP + nsub*SUB_LH + SUB_BOT) : h;
+    M[p.id]={top:top, h:h, subsTop:subsTop, nsub:nsub, fixed:fixed, idx:i};
+    kids.forEach((j,k)=>{
+      M[S.pages[j].id]={top:subsTop + k*SUB_LH, h:SUB_LH, sub:true, parent:p.id, idx:j};
+    });
+    at = top + segH + ITEM_GAP;                           // ← 基于实际 top 推进
+  });
+  return M;
+}
+/* 增删子项 / 章节后，把它后面所有条目与子项区的「手动定位」清掉，
+   否则手动拖过的位置会钉死，加子项时下方章节不会下移 */
+function reflowAfter(i){
+  for(let j=i+1;j<S.pages.length;j++){
+    const q=S.pages[j]; if(q.parent) continue;
+    delete q.top; delete q.subsTop; q.fixed=false; q.fixedSub=false;
+  }
+}
+/* ---------- 两根白线：锚定首 / 末条目 ----------
+   加删章节后侧栏高度会变，白线必须跟着走，否则会孤零零留在原处。
+   手动拖过的位置存成「相对锚点的偏移」，这样既能保留你的微调，又不会钉死。 */
+function autoLineY(){
+  const L=layout();
+  let top=Infinity, bot=-Infinity;
+  S.pages.forEach(p=>{
+    const l=L[p.id]; if(!l) return;
+    top=Math.min(top,l.top); bot=Math.max(bot,l.top+l.h);
+  });
+  if(!isFinite(top)){ top=NAV_TOP0; bot=NAV_TOP0; }
+  return { y1:(top-LINE_TOP_GAP)*PX, y2:(bot+LINE_BOT_GAP)*PX };
+}
+function lineOff(k){                       // 旧存档存的是绝对 Y，迁移成相对偏移
+  const a=autoLineY(), base=(k==='line1')?a.y1:a.y2;
+  if(S.extra[k+'Off']==null && S.extra[k+'Y']!=null){
+    S.extra[k+'Off']=S.extra[k+'Y']-base; delete S.extra[k+'Y'];
+  }
+  return S.extra[k+'Off']||0;
+}
+function placeLines(){
+  const a=autoLineY();
+  const e1=$('line1'), e2=$('line2');
+  if(e1) e1.style.top=(a.y1+lineOff('line1')).toFixed(1)+'px';
+  if(e2) e2.style.top=(a.y2+lineOff('line2')).toFixed(1)+'px';
+}
+/* 取某页的直属子页（全局索引数组） */
+function kidsOf(id){
+  const r=[]; S.pages.forEach((q,j)=>{ if(q.parent===id) r.push(j); }); return r;
+}
+
+/* ---------- 侧栏渲染（条目 + 各自的子项） ---------- */
+function renderNav(){
+  const nav=$('nav'); nav.innerHTML='';
+  const L=layout();
+
+  S.pages.forEach((p,i)=>{
+    if(p.parent) return;                       // 子页在父条目下方渲染，不单独占主条目位
+    const l=L[p.id]||{top:NAV_TOP0,h:p.h||0.296};
+    const d=document.createElement('div');
+    d.className='item el'+(i===cur?' sel':'');
+    d.dataset.el='item'; d.dataset.i=i;
+    d.style.top=(l.top*PX)+'px';
+    d.style.height=(l.h*PX)+'px';
+    if(p.left!=null) d.style.left=(p.left*PX)+'px';
+    if(p.w   !=null) d.style.width=(p.w*PX)+'px';
+    d.style.fontSize=(p.fsPx || Math.round((p.pt||10)*1.3333*10)/10)+'px';
+    if(p.color) d.style.color=p.color;
+    d.draggable=!editMode;          // 编辑模式＝自由拖动定位；否则＝拖拽排序
+    d.innerHTML=`<span class="lb" contenteditable="false" spellcheck="false" title="单击跳到这一页，双击改名字">${p.num}&nbsp;&nbsp;${p.label}</span>`
+      + `<span class="acts"><span class="addsub" title="给本章加子项">＋</span>`
+      + `<span class="del" title="删除本章节">×</span></span>`;
+
+    /* 改编号 / 名称：双击才进入编辑（单击留给跳页）；失焦保存并退回只读（先记快照，可撤销）
+       双击统一走 #nav 上的事件委托（见文件末尾 beginEditLb）—— 不能绑在 lb 上：
+       单击跳页会 renderAll() 重建侧栏，双击第二下落在已被替换的旧节点上，对它 focus() 无效。 */
+    const lb=d.querySelector('.lb');
+    lb.addEventListener('blur',()=>{
+      if(lb.contentEditable!=='true') return;                 // 没在编辑就别误伤
+      lb.contentEditable='false';
+      const t=lb.textContent.trim().replace(/　/g,' ');
+      const m=t.match(/^(\S+)\s+(.*)$/);
+      if(m){
+        if(S.pages[i].num!==m[1]||S.pages[i].label!==m[2]){ snap(); S.pages[i].num=m[1]; S.pages[i].label=m[2]; save(); renderAll(); }
+      } else if(t && S.pages[i].label!==t){ snap(); S.pages[i].label=t; save(); renderAll(); }
+    });
+    lb.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); lb.blur(); }
+      else if(e.key==='Escape'){ e.preventDefault();
+        lb.textContent=(S.pages[i].num||'')+'\u00A0\u00A0'+(S.pages[i].label||''); lb.blur(); }
+    });
+
+    // ＋加子项 / ×删章节
+    d.querySelector('.addsub').addEventListener('click',e=>{ e.stopPropagation(); addSub(i); });
+    d.querySelector('.del').addEventListener('click',e=>{ e.stopPropagation(); delPage(i); });
+
+    // 点击切页（含点文字 —— 现在文字默认只读，所以点哪都能跳）
+    d.addEventListener('click',e=>{
+      if(e.target.isContentEditable) return;      // 双击改名进行中＝不跳页
+      if(e.target.closest('.acts')) return;
+      go(i);
+    });
+
+    // 拖拽排序：主章节连同它的子项页整块移动
+    d.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain', p.id); d.style.opacity=.45; });
+    d.addEventListener('dragend',()=>{ d.style.opacity=1; renderNav(); });
+    d.addEventListener('dragover',e=>{ e.preventDefault(); d.classList.add('dragover'); });
+    d.addEventListener('dragleave',()=>d.classList.remove('dragover'));
+    d.addEventListener('drop',e=>{
+      e.preventDefault(); d.classList.remove('dragover');
+      const fromId=e.dataTransfer.getData('text/plain');
+      if(!fromId || fromId===p.id) return;
+      const fi=S.pages.findIndex(q=>q.id===fromId);
+      if(fi<0 || S.pages[fi].parent) return;                 // 子页不参与排序
+      snap();
+      const curId=S.pages[cur]?S.pages[cur].id:null;
+      const moved=[S.pages[fi]].concat(kidsOf(fromId).map(j=>S.pages[j]));
+      const set={}; moved.forEach(q=>set[q.id]=1);
+      S.pages=S.pages.filter(q=>!set[q.id]);
+      const ti=S.pages.findIndex(q=>q.id===p.id);
+      if(ti<0){ S.pages=S.pages.concat(moved); }
+      else S.pages.splice(fi<ti? ti+1 : ti, 0, ...moved);
+      const ni=S.pages.findIndex(q=>q.id===curId); if(ni>=0) cur=ni;
+      reflowAfter(0);
+      renumberAll();                                       // 拖动排序后编号跟着新顺序走
+      save(); renderAll(); toast('已调整章节顺序');
+    });
+    nav.appendChild(d);
+
+    // 子项：现在是独立的一页，点一下直接跳到它那一页
+    const kidIdx=kidsOf(p.id);
+    if(kidIdx.length){
+      const sb=document.createElement('div');
+      sb.className='subs el';
+      sb.dataset.el='subs'; sb.dataset.i=i;
+      sb.style.top=(l.subsTop*PX)+'px';
+      if(p.subFsPx) sb.style.fontSize=p.subFsPx+'px';
+      if(p.subColor) sb.style.color=p.subColor;
+      sb.innerHTML=kidIdx.map(gi=>
+        `<div class="sub${gi===cur?' cur':''}" data-gi="${gi}" title="单击跳到「${S.pages[gi].label}」这一页，双击改名">`
+        + `<span class="lb" contenteditable="false" spellcheck="false">${S.pages[gi].label}</span>`
+        + `<span class="sdel" title="删除该子项（连同它那一页）">×</span></div>`).join('');
+      sb.querySelectorAll('.sub').forEach(sd=>{
+        const gi=+sd.dataset.gi;
+        const lb=sd.querySelector('.lb');
+        lb.addEventListener('blur',()=>{
+          if(lb.contentEditable!=='true') return;
+          lb.contentEditable='false';
+          const t=lb.textContent.trim();
+          if(t && S.pages[gi].label!==t){ snap(); S.pages[gi].label=t; save(); renderAll(); }
+        });
+        lb.addEventListener('keydown',e=>{
+          if(e.key==='Enter'){ e.preventDefault(); lb.blur(); }
+          else if(e.key==='Escape'){ e.preventDefault(); lb.textContent=S.pages[gi].label||''; lb.blur(); }
+        });
+        sd.querySelector('.sdel').addEventListener('click',e=>{ e.stopPropagation(); delSub(gi); });
+        sd.addEventListener('click',e=>{
+          if(e.target.classList.contains('sdel')) return;
+          if(e.target.isContentEditable) return;          // 改名进行中＝不跳页
+          go(gi);
+        });
+      });
+      nav.appendChild(sb);
+    }
+  });
+
+  // 选中态：白底 / 三角 / 文字三者共中心
+  const p=S.pages[cur], l=p?L[p.id]:null, pill=$('elPill'), tri=$('elTri'), pt=$('elPtitle');
+  if(p && l){
+    // 子页被选中时，白底＋三角落在那一行子项上（行高更小，白底同步收窄）
+    const isSub=!!p.parent, hh=isSub?SUB_LH:(l.h||0.296);
+    let cy=l.top + (isSub?SUB_LH:hh)/2;
+    /* 子项的「行」实际只有约 16px（line-height 1.5），剩下的 3px 是 margin-bottom，
+       两者才凑成 SUB_LH(19.2px)。所以按公式算的中心会偏低约 1.5px —— 直接量 DOM 取真实中心。 */
+    if(isSub){
+      const sbEl=nav.querySelector('.subs .sub.cur');
+      if(sbEl){
+        const rr=sbEl.getBoundingClientRect(), rs=$('slide').getBoundingClientRect();
+        const kk=(rs.width/1280)||1;                       // 去掉舞台缩放
+        cy=((rr.top-rs.top)/kk + (rr.height/kk)/2)/PX;
+      }
+    }
+    const ph=isSub?SUB_PILL_H:PILL_H;
+    pill.style.display='block'; pill.style.top=((cy-ph/2)*PX)+'px'; pill.style.height=(ph*PX)+'px';
+    /* 三角：等比例缩放并垂直居中；子项选中时用小三角（配 10.7px 的子项字），
+       右端始终贴白底右端，所以缩小时 left 要跟着右移。手动拖过三角则不覆盖 left。 */
+    const th=(isSub?SUB_TRI_H:TRI_H)*PX;
+    tri.style.display='block';
+    tri.style.top   = (cy*PX - th/2)+'px';
+    tri.style.width = th+'px';
+    tri.style.height= th+'px';
+    if(!(S.extra && S.extra.triX!=null)) tri.style.left=(PILL_L+PILL_W-th)+'px';
+    if(pt && document.activeElement!==pt) pt.textContent = p.title || (p.parent? p.label : `${p.num}  ${p.label}`);
+    // 正文按页独立保存：切页不丢，子项页也有自己的内容
+    const c=$('elContent');
+    if(c && document.activeElement!==c){
+      c.innerHTML = p.body || (p.parent
+        ? '在此添加「'+p.label+'」的内容（双击直接编辑；可粘贴表格 / 图表 / 图片）'
+        : '在此添加内容（双击直接编辑；可粘贴表格 / 图表 / 图片）');
+    }
+  } else {
+    pill.style.display='none'; tri.style.display='none';
+    if(pt && document.activeElement!==pt) pt.textContent='★  空白章节底版';
+  }
+}
+
+/* ---------- 左侧页面缩略图（像 PPT 一样看到所有页面） ---------- */
+function renderThumbs(){
+  const box=$('thumbs'); box.innerHTML='';
+  const L=layout();
+  const shortOf=p=>{ const m=String(p.label||'').match(/^\s*(\S+)/); return (p.num||(m?m[1]:'·')); };
+  S.pages.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='thumb'+(i===cur?' cur':'');
+    let inner='';
+    S.pages.forEach((q,j)=>{
+      if(q.parent) return;                                  // 子页在父条目下方画
+      const l=L[q.id]; if(!l) return;
+      inner += `<div class="t-i" style="top:${(l.top/7.5*100).toFixed(2)}%;height:${(l.h/7.5*100).toFixed(2)}%"></div>`;
+      kidsOf(q.id).forEach((gi,k)=>{
+        const sy=l.subsTop + k*SUB_LH;
+        inner += `<div class="t-s" style="top:${(sy/7.5*100).toFixed(2)}%"></div>`;
+      });
+      if(j===i){
+        const cy=l.top + l.h/2 - PILL_H/2;
+        inner += `<div class="t-pill" style="top:${(cy/7.5*100).toFixed(2)}%;height:${(PILL_H/7.5*100).toFixed(2)}%"></div>`;
+      }
+      kidsOf(q.id).forEach(gi=>{                            // 子页被选中 → 白底画在子项行上
+        if(gi!==i) return;
+        const k=kidsOf(q.id).indexOf(gi), sy=l.subsTop + k*SUB_LH;
+        inner += `<div class="t-pill" style="top:${(sy/7.5*100).toFixed(2)}%;height:${(0.24/7.5*100).toFixed(2)}%"></div>`;
+      });
+    });
+    const isSub=!!p.parent;
+    d.innerHTML=`<div class="no">第 ${i+1} 页${isSub?' · 子项':''}</div>`
+      + `<div class="tc"><div class="t-bar"></div>${inner}`
+      + `<div class="t-title"></div><div class="t-cnt"></div></div>`
+      + `<div class="cap">${isSub? '└ '+p.label : p.num+'  '+p.label}</div>`;
+    d.title=`第 ${i+1} 页 · ${isSub?'子项 ':''}${p.label}（点击查看该页）`;
+    d.onclick=()=>go(i);
+    box.appendChild(d);
+  });
+  $('thumbCount').textContent=`共 ${S.pages.length} 页`;
+  $('curinfo').textContent=`第 ${cur+1} / ${S.pages.length} 页`;
+}
+
+function renderPager(){
+  const pg=$('pager'); pg.innerHTML='';
+  const tip=document.createElement('span');
+  tip.textContent = presenting ? '跳到 →' : '选择章节母版 →';
+  pg.appendChild(tip);
+  S.pages.forEach((p,i)=>{
+    const b=document.createElement('i');
+    let t=p.num;
+    if(!t){ const m=String(p.label||'').match(/^\s*(\S+)/); t=m?m[1]:String(i+1); }
+    b.textContent=t; if(i===cur) b.className='cur';
+    b.title=`第 ${i+1} 页 · ${p.label}`+(p.parent?'（子项页）':'');
+    b.onclick=e=>{ e.stopPropagation(); go(i); if(presenting) pvWake(); };
+    pg.appendChild(b);
+  });
+}
+function renderAll(){
+  renderNav(); renderThumbs(); renderPager(); renderToc(); placeLines(); if(presenting) updPv();
+  // 没有可撤 / 可重做的历史时，按钮变淡（还能点，点了会提示）
+  const u=$('bUndo'), r=$('bRedo');
+  if(u) u.style.opacity = undoStack.length ? 1 : .45;
+  if(r) r.style.opacity = redoStack.length ? 1 : .45;
+  // 「删除子项」只在当前停在某子项页时才可点，否则变淡（点了会给指引提示）
+  const ds=$('bDelSub');
+  if(ds){
+    const onSub=!!(S.pages[cur] && S.pages[cur].parent);
+    ds.style.opacity = onSub ? 1 : .45;
+    ds.title = onSub ? '删除当前这个子项（连同它那一页），其余子项自动重新编号' : '请先切到某个子项页，才能删除子项';
+  }
+}
+/* 正文 / 页面标题：写入当前页，切页前必存 */
+function saveCur(){
+  const p=S.pages[cur]; if(!p) return;
+  const c=$('elContent'), t=$('elPtitle');
+  if(c) p.body=c.innerHTML;
+  if(t && document.activeElement===t) p.title=t.textContent;
+}
+/* 切页 / 撤销前先让正文失焦，否则 activeElement 判断会挡住内容刷新 */
+function releaseFocus(){
+  const a=document.activeElement;
+  if(a && a!==document.body && a.blur){ try{ a.blur(); }catch(e){} }
+}
+function go(i){
+  const t=Math.max(0,Math.min(S.pages.length-1,i));
+  if(t!==cur){ saveCur(); releaseFocus(); cur=t; }
+  renderAll();
+}
+/* 开始编辑正文 = 记一次快照，撤销能回到编辑前 */
+['elContent','elPtitle'].forEach(id=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener('focus',()=>snap());
+  el.addEventListener('input',()=>{ saveCur(); save(); });
+  el.addEventListener('blur',()=>{ saveCur(); save(); });
+});
+
+/* ---------- 悬浮目录：列出所有章节 / 子项，点击直接跳页 ---------- */
+let tocOpen=false;
+function renderToc(){
+  const box=$('tocList'); if(!box) return;
+  box.innerHTML='';
+  S.pages.forEach((p,i)=>{
+    if(p.parent) return;                                    // 子页跟在父章节后面列出
+    const d=document.createElement('div');
+    d.className='toc-i'+(i===cur?' cur':'');
+    d.innerHTML=`<span class="n">${p.num||(i+1)}</span>`
+      + `<span class="t">${p.label||'未命名'}</span>`;
+    d.title=`第 ${i+1} 页 · ${p.num} ${p.label}`;
+    d.onclick=()=>{ go(i); if(presenting) setToc(false); };
+    box.appendChild(d);
+    kidsOf(p.id).forEach(gi=>{                              // 子项＝独立页，可点击直达
+      const q=S.pages[gi];
+      const x=document.createElement('div');
+      x.className='toc-s'+(gi===cur?' cur':'');
+      x.textContent=q.label; x.title=`第 ${gi+1} 页 · ${q.label}`;
+      x.onclick=()=>{ go(gi); if(presenting) setToc(false); };
+      box.appendChild(x);
+    });
+  });
+  $('tocCount').textContent=`共 ${S.pages.length} 页`;
+}
+function setToc(v){
+  tocOpen=v;
+  $('toc').classList.toggle('open',v);
+  $('tocBtn').classList.toggle('on',v);
+  $('tocBtn').querySelector('.ar').textContent = v?'▼':'▲';
+  $('pvToc').classList.toggle('on',v);
+}
+
+/* ---------- 子项增删 ---------- */
+function subPrefix(num){
+  const m=String(num).match(/\d+/); return m? String(+m[0]) : String(num||'');
+}
+/* 章节增删 / 排序后统一重编号：主章节 01、02、03…，子项前缀跟着父章节走（如 3.1） */
+function renumberAll(){
+  let n=0;
+  S.pages.forEach(p=>{
+    if(p.parent) return;
+    n++;
+    p.num=String(n).padStart(2,'0');
+    renumberSubs(p.id);
+  });
+}
+/* 同一章节下的子项自动续号：3.1 / 3.2 / 3.3 删掉中间一个后变成 3.1 / 3.2。
+   只换掉前缀，保留原来的名字和间隔空格 —— 用户自己改过的名字不会被吃掉。 */
+function renumberSubs(pid){
+  const pi=S.pages.findIndex(q=>q.id===pid); if(pi<0) return;
+  const base=subPrefix(S.pages[pi].num)||(pi+1);
+  let k=0;
+  S.pages.forEach(q=>{
+    if(q.parent!==pid) return;
+    k++;
+    const m=String(q.label||'').match(/^(\S+)(\s*)(.*)$/);
+    if(!m) return;
+    const gap=(m[2] && m[2].length) ? m[2] : '   ';
+    q.label=base+'.'+k+gap+m[3];
+  });
+}
+/* 加子项＝真的多出一页：插到父章节后面，编号自动生成，下方章节自动下移 */
+function addSub(i){
+  const p=S.pages[i];
+  if(!p){ toast('请先选中一个章节'); return; }
+  if(p.parent){ toast('子项下不再嵌套子项；要给「'+p.label+'」同级加，请点它所属的章节',4200); return; }
+  snap();
+  const base=subPrefix(p.num)||(i+1);
+  const k=kidsOf(p.id).length+1;
+  let at=i+1; while(at<S.pages.length && S.pages[at].parent===p.id) at++;   // 插在已有子项之后
+  S.pages.splice(at,0,{ id:newId(), num:'', label:`${base}.${k}   新增子项`, parent:p.id, h:SUB_LH, pt:9 });
+  delete p.subsTop; p.fixedSub=false;    // 子项区重新排
+  reflowAfter(at-1);                     // 下方章节跟着下移
+  save(); go(at);
+  toast(`已新增子项页 ${base}.${k}（第 ${at+1} 页）—— 双击左栏文字改成你的内容，下方章节已自动下移`,4600);
+}
+/* 删子项＝连它那一页一起删；同章其余子项自动续号、位置上移，下方章节也跟着上移 */
+function delSub(gi){
+  const p=S.pages[gi];
+  if(!p || !p.parent) return;
+  const pid=p.parent;
+  ask(`删除子项「${p.label}」？`,'它对应的那一页会一起删掉；同章其余子项会自动重新编号并上移，下方章节也跟着上移。',()=>{
+    snap();
+    const pi=S.pages.findIndex(q=>q.id===pid);
+    S.pages.splice(gi,1);
+    renumberSubs(pid);                                 // 3.1/3.2/3.3 删中间一个 → 3.1/3.2
+    const pp=S.pages[pi];
+    if(pp){ delete pp.subsTop; pp.fixedSub=false; }    // 子项区按新数量重排（往上收）
+    reflowAfter(Math.max(0,pi));
+    save(); go(Math.min(cur,S.pages.length-1));
+    toast('已删除子项（含它那一页）—— 其余子项已重新编号、位置自动上移');
+  });
+}
+
+/* ---------- 章节增删 ---------- */
+function openTplPick(){
+  const box=$('tplPick'), list=$('tplList'); list.innerHTML='';
+  S.pages.forEach((p,i)=>{
+    if(p.parent) return;                                   // 只拿主章节当母版
+    const nsub=kidsOf(p.id).length;
+    const d=document.createElement('div'); d.className='tplrow';
+    d.innerHTML=`<span class="n">第 ${i+1} 页</span><span class="t">${p.num}  ${p.label}</span>`
+              + `<span class="m">${nsub?'含 '+nsub+' 个子项':'无子项'}</span>`;
+    d.onclick=()=>{ box.style.display='none'; addPageFrom(i); };
+    list.appendChild(d);
+  });
+  const d=document.createElement('div'); d.className='tplrow';
+  d.innerHTML=`<span class="n">空白</span><span class="t">★ 空白底版</span><span class="m">无子项</span>`;
+  d.onclick=()=>{ box.style.display='none'; addPageFrom(-1); };
+  list.appendChild(d);
+  box.style.display='flex';
+}
+$('tplCancel').onclick=()=>{ $('tplPick').style.display='none'; };
+
+function addPageFrom(idx){
+  const t=(idx>=0)? S.pages[idx] : null;
+  snap();
+  const n=S.pages.filter(q=>!q.parent).length+1;                 // 只数主章节
+  const np={ id:newId(), num:String(n).padStart(2,'0'), label:'新增章节',
+             h:(t?t.h:0.352), pt:(t?t.pt:10) };
+  S.pages.push(np);
+  // 模板页有子项 → 一并复制成子页
+  if(t && t.parent==null){
+    kidsOf(t.id).forEach(gi=>{
+      const s=S.pages[gi];
+      S.pages.push({ id:newId(), num:'', label:s.label, parent:np.id, h:s.h||SUB_LH, pt:s.pt||9 });
+    });
+  }
+  reflowAfter(S.pages.length-2);
+  renumberAll();                                           // 新增后统一重编号（含复制过来的子项前缀）
+  save(); go(S.pages.length-1);
+  toast(`已新增第 ${S.pages.length} 页，沿用「${t ? t.num+' '+t.label : '空白底版'}」的版式 —— 双击左栏文字改成你的编号和名称`);
+}
+function delPage(i){
+  if(!S.pages[i]) return;
+  const p=S.pages[i];
+  const kids=kidsOf(p.id);                                       // 主章节：子页一起删
+  const maincnt=S.pages.filter(q=>!q.parent).length;
+  if(!p.parent && maincnt<=1){ toast('至少保留一个章节'); return; }
+  const nm=p.parent? p.label : `${p.num} ${p.label}`;
+  ask(`删除「${nm}」对应的这一页？`,
+      kids.length? `它的 ${kids.length} 个子项页会一起删掉。` : `删掉后共 ${S.pages.length-1} 页，下方章节会自动上移。`,
+      ()=>{
+        snap();
+        const drop={}; [i].concat(kids).forEach(j=>drop[j]=1);
+        S.pages=S.pages.filter((q,j)=>!drop[j]);
+        reflowAfter(Math.max(0,i-1));
+        renumberAll();                                       // 删完重编号：02 被删，03→02、04→03…
+        save(); go(Math.min(cur,S.pages.length-1));
+        toast(`已删除「${nm}」，现在共 ${S.pages.length} 页，下方章节已自动上移`);
+      });
+}
+function toast(msg,ms){
+  const t=$('toast'); if(!t) return;
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(t._h); t._h=setTimeout(()=>{ t.style.display='none'; }, ms||3600);
+}
+/* 自定义确认框：预览环境里原生 confirm 常被拦截（点了没反应），这里一律用自己的弹窗 */
+let _askCb=null;
+function ask(msg, sub, cb, okText){
+  _askCb=cb;
+  $('askMsg').textContent=msg;
+  $('askSub').textContent=sub||'';
+  $('askYes').textContent=okText||'删除';
+  $('ask').style.display='flex';
+}
+$('askYes').onclick=()=>{ $('ask').style.display='none'; const f=_askCb; _askCb=null; if(f) f(); };
+$('askNo').onclick =()=>{ $('ask').style.display='none'; _askCb=null; };
+$('ask').onclick=e=>{ if(e.target.id==='ask') $('askNo').onclick(); };
+
+/* ---------- 元素选中 + 属性面板 ---------- */
+let selEl=null;
+const INSPECTORS={
+  bg:{t:'侧栏底板',f:[['fill','底色']]},
+  navlogo:{t:'导航 logo',f:[['w','宽'],['h','高'],['left','左右'],['top','上下']]},
+  line1:{t:'白线（上）',f:[['w','长度'],['h','粗细'],['bg','颜色'],['left','左右'],['top','上下']]},
+  line2:{t:'白线（下）',f:[['w','长度'],['h','粗细'],['bg','颜色'],['left','左右'],['top','上下']]},
+  item:{t:'章节条目',f:[['left','左右'],['top','上下'],['w','宽'],['h','高'],['fs','字号'],['fc','字色']]},
+  subs:{t:'子项区',f:[['left','左右'],['top','上下'],['fs','字号'],['fc','字色']]},
+  pill:{t:'选中态白底',f:[['w','宽'],['h','高'],['bg','底色']]},
+  tri:{t:'选中态三角',f:[['bc','颜色'],['w','大小']]},
+  brand:{t:'右上角 logo',f:[['logoW','logo 宽'],['logoH','logo 高'],['left','左右'],['top','上下']]},
+  slogan:{t:'标语（三棵树 马上住）',f:[['fs','字号'],['fc','字色'],['w','宽'],['left','左右'],['top','上下']]}
+};
+/* 章节条目 / 子项区是动态创建的，改用事件委托（见下方 #slide 的 mousedown） */
+function selectEl(el){
+  document.querySelectorAll('.el.sel').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel'); selEl=el;
+  const key=el.dataset.el, def=INSPECTORS[key];
+  if(!def){ $('insp').style.display='none'; return; }
+  $('insp').style.display='block'; $('inspT').textContent=def.t;
+  fillPick(el);
+  const cs=getComputedStyle(el);
+  let html='';
+  def.f.forEach(([k,label])=>{
+    if(k==='w'||k==='h'){
+      const cur=(k==='w'?el.offsetWidth:el.offsetHeight);
+      html+=`<label>${label}<input type="number" data-k="${k}" value="${Math.round(cur)}"></label>`;
+    } else if(k==='bg'||k==='fill'){
+      html+=`<label>${label}<input type="color" data-k="bg" value="${rgb2hex(cs.backgroundColor)}"></label>`;
+    } else if(k==='bc'){
+      const poly=el.querySelector?el.querySelector('polygon'):null;
+      const cur=poly? getComputedStyle(poly).fill : cs.borderLeftColor;
+      html+=`<label>${label}<input type="color" data-k="bc" value="${rgb2hex(cur)}"></label>`;
+    } else if(k==='left'||k==='top'){
+      html+=`<label>${label}<input type="number" data-k="${k}" value="${Math.round(posOf(el,k))}"></label>`;
+    } else if(k==='fs'){
+      const src=(key==='slogan'&&el.querySelector('.l1'))?el.querySelector('.l1'):el;
+      const px=parseFloat(getComputedStyle(src).fontSize)||13.3;
+      html+=`<label>${label} px<input type="number" step="0.5" data-k="fs" value="${px.toFixed(1)}"></label>`;
+    } else if(k==='fc'){
+      html+=`<label>${label}<input type="color" data-k="fc" value="${rgb2hex(cs.color)}"></label>`;
+    } else if(k==='logoW'||k==='logoH'){
+      const img=el.querySelector('img');
+      const cur=img?(k==='logoW'?img.offsetWidth:img.offsetHeight):(k==='logoW'?108:45);
+      html+=`<label>${label}<input type="number" data-k="${k}" value="${Math.round(cur)}"></label>`;
+    }
+  });
+  $('inspBody').innerHTML=html;
+  $('inspBody').querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const k=inp.dataset.k, v=inp.value;
+      if(k==='w') el.style.width=v+'px';
+      if(k==='h') el.style.height=v+'px';
+      if(k==='bg') el.style.backgroundColor=v;
+      if(k==='bc'){ const poly=el.querySelector?el.querySelector('polygon'):null;
+                    if(poly) poly.style.fill=v; else el.style.borderLeftColor=v; }
+      if(k==='left') el.style.left=v+'px';
+      if(k==='top')  el.style.top =v+'px';
+      if(k==='fs'){ el.style.fontSize=(+v)+'px';
+                    el.querySelectorAll('.l1,.l2').forEach(x=>x.style.fontSize=(+v)+'px'); }
+      if(k==='fc')   el.style.color=v;
+      if(k==='logoW'){ const img=el.querySelector('img'); if(img) img.style.width=v+'px'; }
+      if(k==='logoH'){ const img=el.querySelector('img'); if(img) img.style.height=v+'px'; }
+      saveStateOf(key,el); persistPos(el); save();
+    });
+  });
+  if(key==='item'){
+    $('inspBody').insertAdjacentHTML('beforeend',
+      '<div class="row"><button id="itemAuto">恢复自动排列</button></div>');
+    $('itemAuto').onclick=()=>{
+      const p=S.pages[+el.dataset.i];
+      if(p){ delete p.top; delete p.left; p.fixed=false; }
+      save(); $('inspClose').onclick(); renderAll(); toast('该章节已恢复自动排列（会跟着子项增减自动上下移动）');
+    };
+  }
+}
+/* 元素选择器：白底/三角/被遮挡的元素，从这里一点就选中 */
+function fillPick(curEl){
+  const sel=$('inspPick'); if(!sel) return;
+  const statics=[['elBg','侧栏底板'],['elNavLogo','导航 logo'],['line1','白线（上）'],['line2','白线（下）'],
+                 ['elPill','选中态 · 白底'],['elTri','选中态 · 三角'],['elBrand','右上角 logo'],['elSlogan','标语']];
+  let html='<option value="">— 切换元素 —</option>';
+  statics.forEach(a=>{ html+=`<option value="#${a[0]}">${a[1]}</option>`; });
+  S.pages.forEach((p,i)=>{
+    if(p.parent) return;
+    html+=`<option value="item:${i}">章节 ${p.num} ${p.label}</option>`;
+    if(kidsOf(p.id).length) html+=`<option value="subs:${i}">子项区 ${p.num}</option>`;
+  });
+  sel.innerHTML=html;
+  if(curEl){
+    if(curEl.id) sel.value='#'+curEl.id;
+    else if(curEl.dataset.el==='item') sel.value='item:'+curEl.dataset.i;
+    else if(curEl.dataset.el==='subs') sel.value='subs:'+curEl.dataset.i;
+  }
+  sel.onchange=()=>{
+    const v=sel.value; if(!v) return;
+    let t=null;
+    if(v.charAt(0)==='#') t=document.querySelector(v);
+    else { const a=v.split(':'); t=document.querySelector(`[data-el="${a[0]}"][data-i="${a[1]}"]`); }
+    if(t){ selectEl(t); toast('已选中「'+sel.options[sel.selectedIndex].text+'」'+(editMode?'，可直接拖动':'')); }
+  };
+}
+function saveStateOf(key,el){
+  if(key==='line1'){ S.extra.line1w=el.offsetWidth; S.extra.line1h=el.offsetHeight; S.extra.lineColor=rgb2hex(getComputedStyle(el).backgroundColor); }
+  if(key==='line2'){ S.extra.line2w=el.offsetWidth; S.extra.line2h=el.offsetHeight; S.extra.lineColor=rgb2hex(getComputedStyle(el).backgroundColor); }
+  if(key==='tri'){ const poly=el.querySelector?el.querySelector('polygon'):null;
+                   S.extra.triColor=rgb2hex(getComputedStyle(poly||el).fill); }
+  if(key==='bg'){ S.extra.bgColor=rgb2hex(getComputedStyle(el).backgroundColor); }
+  if(key==='item'){ const p=S.pages[+el.dataset.i]; if(p){
+    p.fsPx=parseFloat(getComputedStyle(el).fontSize)||p.fsPx;
+    p.color=rgb2hex(getComputedStyle(el).color);
+    p.w=el.offsetWidth/PX; p.h=el.offsetHeight/PX; } }
+  if(key==='subs'){ const p=S.pages[+el.dataset.i]; if(p){
+    p.subFsPx=parseFloat(getComputedStyle(el).fontSize)||p.subFsPx;
+    p.subColor=rgb2hex(getComputedStyle(el).color); } }
+  if(key==='brand'){ const img=el.querySelector('img'); if(img){
+    S.extra.brandLogoW=img.offsetWidth; S.extra.brandLogoH=img.offsetHeight; } }
+  if(key==='navlogo'){ S.extra.navLogoW=el.offsetWidth; S.extra.navLogoH=el.offsetHeight; }
+  if(key==='slogan'){ const l1=el.querySelector('.l1');
+    S.extra.sloganFsPx=parseFloat(getComputedStyle(l1||el).fontSize)||S.extra.sloganFsPx;
+    S.extra.sloganColor=rgb2hex(getComputedStyle(el).color); S.extra.sloganW=el.offsetWidth; }
+  save();
+}
+function rgb2hex(c){
+  const m=c.match(/\d+/g); if(!m) return '#ffffff';
+  return '#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');
+}
+$('inspClose').onclick=()=>{ $('insp').style.display='none';
+  document.querySelectorAll('.el.sel').forEach(x=>x.classList.remove('sel')); selEl=null; };
+$('inspDel').onclick=()=>{ if(!selEl) return;
+  if(selEl.id==='elBg'){ toast('侧栏底板不建议删除'); return; }
+  const el=selEl;
+  ask('删除所选元素？','删除后可点「恢复默认」还原。',()=>{
+    el.style.display='none'; $('insp').style.display='none'; selEl=null;
+  }); };
+$('slide').addEventListener('mousedown',e=>{
+  const ce=!!e.target.isContentEditable;          // 标语 / 标题 / 正文是可编辑文字
+  if(ce && !editMode) return;                     // 普通模式：点文字＝直接改文字
+  /* 普通模式点左侧导航＝「点到哪跳到哪」，跳页交给 click，这里不弹属性面板免得碍事 */
+  if(!editMode && e.target.closest('#nav')) return;
+  if(e.target.closest('.acts')||e.target.classList.contains('sdel')) return;  // ＋/× 按钮不触发选中
+  const el=e.target.closest('.el');
+  if(el){ selectEl(el); if(editMode) startDrag(e,el,ce); }  // 编辑模式下点文字也能选中（保留改字）
+  else if(!ce) $('inspClose').onclick();
+});
+
+/* 统一取位置：relative 元素（如标语）基准为 0，absolute 元素用 offsetLeft/Top 兜底 */
+function posOf(el,k){
+  const v=parseFloat(el.style[k]);
+  if(!isNaN(v)) return v;
+  if(getComputedStyle(el).position==='relative') return 0;
+  return k==='left'?el.offsetLeft:el.offsetTop;
+}
+
+/* ---------- 拖动（编辑模式） ---------- */
+function startDrag(e,el,isText){
+  const sx=e.clientX, sy=e.clientY;
+  const l=posOf(el,'left'), t=posOf(el,'top');
+  el.style.left=l+'px'; el.style.top=t+'px';
+  const mm=ev=>{
+    /* 从可编辑文字上发起拖动时，移动超过阈值就清掉文字选区，避免边拖边刷蓝 */
+    if(isText && Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy)>4){
+      const s=document.getSelection(); if(s) s.removeAllRanges(); }
+    const k=1280/ $('slide').getBoundingClientRect().width;
+    el.style.left=(l+(ev.clientX-sx)*k)+'px';
+    el.style.top =(t+(ev.clientY-sy)*k)+'px';
+  };
+  const mu=()=>{ document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',mu);
+                 persistPos(el); save(); };
+  document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
+}
+/* 拖动结束 → 把位置写回数据，刷新后不丢 */
+function persistPos(el){
+  const key=el.dataset.el; if(!key) return;
+  const lx=parseFloat(el.style.left), ty=parseFloat(el.style.top);
+  if(isNaN(lx)||isNaN(ty)) return;
+  if(key==='item'){
+    const p=S.pages[+el.dataset.i];
+    if(p){ p.left=lx/PX; p.top=ty/PX; p.fixed=true; }   // 手动定过位 → 加子项时不再被自动排覆盖
+  }
+  else if(key==='subs'){
+    const p=S.pages[+el.dataset.i];
+    if(p){ p.subsTop=ty/PX; p.fixedSub=true; }
+  }
+  else if(key==='line1'||key==='line2'){   // 白线存「相对首/末项的偏移」，这样加删章节仍会跟着走
+    S.extra[key+'X']=lx;
+    const a=autoLineY();
+    S.extra[key+'Off']=ty - (key==='line1'?a.y1:a.y2);
+    delete S.extra[key+'Y'];
+  }
+  else { S.extra[key+'X']=lx; S.extra[key+'Y']=ty; }
+}
+
+/* ---------- 缩放适配 ---------- */
+function fit(){
+  const st=$('stage'), s=$('slide');
+  s.style.transformOrigin='top left';
+  const pad=presenting?0:16;                       // 放映时不留边，铺满整屏
+  const raw=Math.min((st.clientWidth-pad)/1280,(st.clientHeight-pad)/720);
+  // 放映：允许放大铺满；普通编辑态：最多 1:1，避免无限放大失真
+  const k=presenting ? raw : Math.min(raw,1);
+  s.style.transform=(Math.abs(k-1)>0.002)?`scale(${k})`:'none';
+  const w=1280*k,h=720*k;
+  s.style.marginLeft=Math.max(0,(st.clientWidth-w)/2)+'px';
+  s.style.marginTop =Math.max(0,(st.clientHeight-h)/2)+'px';
+}
+window.addEventListener('resize',fit);
+/* 全屏切换 / 窗口尺寸变化后 stage 的尺寸才真正更新，用 ResizeObserver 兜底重算，否则幻灯片不跟着放大 */
+if(window.ResizeObserver){
+  let _rt=null;
+  new ResizeObserver(()=>{ clearTimeout(_rt); _rt=setTimeout(fit,0); }).observe($('stage'));
+}
+
+/* ---------- 工具条事件 ---------- */
+$('bEdit').onclick=e=>{ editMode=!editMode; e.target.classList.toggle('on',editMode);
+  $('slide').classList.toggle('edit',editMode);
+  document.body.classList.toggle('editing',editMode);   // ＋ / × 只在编辑模式下出现
+  renderAll();
+  toast(editMode?'编辑模式：可直接拖动章节条目 / logo / 白线，点元素改属性；条目上的 ＋ × 也已放出来':'已退出编辑模式，＋ × 已收起'); };
+$('bAdd').onclick=()=>openTplPick();
+$('bAddSub').onclick=()=>{
+  const p=S.pages[cur];
+  addSub(p&&p.parent ? S.pages.findIndex(q=>q.id===p.parent) : cur);   // 当前在子项页 → 给它父章节加
+};
+$('bDel').onclick=()=>delPage(cur);
+/* 删的是「当前所在那一页」对应的子项；停在章节页时给出明确指引，不做猜测 */
+$('bDelSub').onclick=()=>{
+  const p=S.pages[cur];
+  if(!p){ toast('没有可删的页面'); return; }
+  if(!p.parent){
+    const n=kidsOf(p.id).length;
+    toast(n ? `当前是主章节「${p.label}」，它下面有 ${n} 个子项 —— 请先在左栏点某个子项（或直接点它那一行）再删`
+            : `当前是主章节「${p.label}」，没有子项可删`, 4600);
+    return;
+  }
+  delSub(cur);
+};
+$('bUndo').onclick=()=>undo();
+$('bRedo').onclick=()=>redo();
+$('bSave').onclick=()=>{ save(); toast('已保存到本机 —— 关掉再打开会自动恢复（其实每次改动都已自动保存）'); };
+$('bHelp').onclick=()=>{ $('help').style.display='flex'; };
+$('helpClose').onclick=()=>{ $('help').style.display='none'; };
+$('help').onclick=e=>{ if(e.target.id==='help') $('help').style.display='none'; };
+$('bPrev').onclick=()=>go(cur-1);
+$('bNext').onclick=()=>go(cur+1);
+$('bPdf').onclick=()=>window.print();
+$('bPlay').onclick=()=>startPresent();
+$('tocBtn').onclick=()=>setToc(!tocOpen);
+
+/* ---------- 放映模式：整屏播放 + 键盘翻页 ---------- */
+let presenting=false;
+function setEditable(on){
+  $('slide').querySelectorAll('[contenteditable]')
+    .forEach(el=>el.setAttribute('contenteditable', on?'true':'false'));
+}
+function updPv(){
+  $('pvNum').textContent=`${cur+1} / ${S.pages.length}`;
+  $('pvprog').style.width=((cur+1)/Math.max(1,S.pages.length)*100)+'%';
+}
+let pvTimer=null;
+function pvWake(){
+  const b=$('pvbar'); b.style.opacity='1';
+  clearTimeout(pvTimer);
+  pvTimer=setTimeout(()=>{ if(presenting) b.style.opacity='0'; },2600);
+}
+/* --- 全屏：预览窗（iframe）里浏览器会直接拒绝，必须能降级并告诉用户怎么办 --- */
+function inFrame(){ try{ return window.self!==window.top; }catch(e){ return true; } }
+function hasFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+function fsEl(){ return document.documentElement; }
+function fsReq(){ return fsEl().requestFullscreen||fsEl().webkitRequestFullscreen||fsEl().msRequestFullscreen; }
+function fsFailMsg(){
+  return inFrame()
+    ? '这里是预览窗口，浏览器不让它全屏 —— 点 ⧉ 浏览器打开，在新标签里再点 ▶ 放映'
+    : '全屏被浏览器拒绝了：再点一次 ⛶ 全屏，或直接按 F11';
+}
+function reqFs(silent){
+  if(hasFs()){ if(!silent) toast('已经是全屏了'); return true; }
+  const fn=fsReq();
+  if(!fn){ if(!silent) toast('这个浏览器不支持全屏 API，请手动按 F11'); return false; }
+  let r;
+  try{ r=fn.call(fsEl()); }                 // iframe 未授权时会直接抛异常
+  catch(e){ if(!silent) toast(fsFailMsg()); return false; }
+  if(r&&r.catch) r.catch(()=>{ if(!hasFs()) toast(fsFailMsg()); });  // 失败一定要说，别静默
+  return true;
+}
+function openInBrowser(){
+  const w=window.open(location.href,'_blank');
+  if(!w) toast('弹窗被拦截了：请允许弹窗，或把 html 文件拖到浏览器里打开');
+  else toast('已在浏览器新标签打开，在那里点 ▶ 放映 / ⛶ 全屏');
+}
+function startPresent(){
+  if(presenting) return;
+  presenting=true;
+  if(editMode){ editMode=false; $('bEdit').classList.remove('on'); $('slide').classList.remove('edit');
+                document.body.classList.remove('editing'); }
+  document.body.classList.add('present');
+  setEditable(false);              // 放映时不允许误改文字
+  renderAll(); fit(); pvWake();
+  const ok=reqFs(true);            // 先看能不能真全屏，能就不打扰
+  if(!ok) setTimeout(()=>toast(fsFailMsg(),4600),200);   // 失败：说清楚怎么拿到真全屏
+  setTimeout(fit,60); setTimeout(fit,320);   // 全屏是异步的：尺寸落定后再算一次，否则幻灯片不会铺满
+  syncFsBtn();
+  toast('放映中：← → 翻页 · D 开目录 · F 全屏 · Esc 退出');
+}
+function syncFsBtn(){ $('pvFs').textContent = hasFs() ? '⛶ 退出全屏' : '⛶ 全屏'; }
+function stopPresent(){
+  if(!presenting) return;
+  presenting=false;
+  document.body.classList.remove('present');
+  setEditable(true);
+  setToc(false);
+  clearTimeout(pvTimer);
+  const ex=document.exitFullscreen||document.webkitExitFullscreen;
+  if(hasFs() && ex){ const r=ex.call(document); if(r&&r.catch) r.catch(()=>{}); }
+  renderAll(); fit(); syncFsBtn();
+}
+$('pvPrev').onclick=()=>{ go(cur-1); pvWake(); };
+$('pvNext').onclick=()=>{ go(cur+1); pvWake(); };
+$('pvToc').onclick =()=>{ setToc(!tocOpen); pvWake(); };
+$('pvExit').onclick=()=>stopPresent();
+$('pvFs').onclick=()=>{
+  pvWake();
+  const ex=document.exitFullscreen||document.webkitExitFullscreen;
+  if(hasFs()){ if(ex){ const r=ex.call(document); if(r&&r.catch) r.catch(()=>{}); } }
+  else reqFs();
+};
+$('pvWin').onclick=()=>{ pvWake(); openInBrowser(); };
+/* 放映时点画面 = 下一页（点侧栏导航、右下角章节选择器除外，它们自己会跳页） */
+$('slide').addEventListener('click',e=>{
+  if(!presenting) return;
+  if(e.target.closest('#nav')) return;
+  if(e.target.closest('.pager')) return;      // 右下角「跳到」选择器：别再被翻页覆盖掉
+  go(cur+1); pvWake();
+});
+document.addEventListener('mousemove',()=>{ if(presenting) pvWake(); });
+/* 浏览器全屏下按 Esc 由系统接管，这里兜住「全屏已退出但状态没同步」的情况 */
+document.addEventListener('fullscreenchange',()=>{
+  syncFsBtn();
+  fit();                       // 进出全屏尺寸变了，幻灯片要重新铺满
+  setTimeout(fit,80);
+  if(presenting && !hasFs()) stopPresent();
+});
+$('bReset').onclick=()=>{ ask('恢复默认章节与排版？','当前所有改动会被清除，回到最初的 5 章、每章 1 个子项（共 10 页）。',()=>{
+  snap();
+  KEYS_ALL.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });   // 历史键全部清，不留脏存档
+  S=normalize(JSON.parse(JSON.stringify(DEFAULT))); cur=0; renderAll(); fit();
+  toast('已恢复默认：5 个章节 + 每章 1 个子项（共 10 页）');
+},'恢复默认'); };
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey) && (e.key==='z'||e.key==='Z')){
+    e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
+  if((e.ctrlKey||e.metaKey) && (e.key==='y'||e.key==='Y')){ e.preventDefault(); redo(); return; }
+  if((e.ctrlKey||e.metaKey) && (e.key==='s'||e.key==='S')){ e.preventDefault(); save(); toast('已保存'); return; }
+  if(e.target.isContentEditable) return;
+  if(presenting){
+    const k=e.key;
+    if(k==='Escape'){ stopPresent(); }
+    else if(k==='ArrowRight'||k==='PageDown'||k==='ArrowDown'||k===' '||k==='Enter'){ e.preventDefault(); go(cur+1); pvWake(); }
+    else if(k==='ArrowLeft'||k==='PageUp'||k==='ArrowUp'){ e.preventDefault(); go(cur-1); pvWake(); }
+    else if(k==='Home'){ go(0); pvWake(); }
+    else if(k==='End'){ go(S.pages.length-1); pvWake(); }
+    else if(k==='d'||k==='D'){ setToc(!tocOpen); }
+    else if(k==='f'||k==='F'||k==='F11'){ e.preventDefault(); pvWake();
+      if(hasFs()) stopPresent(); else reqFs(); }
+    return;
+  }
+  if(e.key==='ArrowRight'||e.key==='PageDown') go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='PageUp') go(cur-1);
+  if(e.key==='Escape'&&tocOpen) setToc(false);
+});
+$('elContent').addEventListener('input',()=>{ S.content=$('elContent').innerHTML; save(); });
+/* 右侧页面标题只存进 p.title，【不】回写到左侧导航的 num / label ——
+   左栏章节名归左栏管，右侧怎么改都不会动它；改章节名请双击左栏文字。 */
+
+/* ---------- 左栏双击改名（事件委托） ----------
+   为什么必须委托：单击跳页会 renderAll() 重建整个侧栏，双击的第二下 click
+   落在「已被替换掉的旧节点」上，直接对它 focus() 不会生效（光标进不去）。
+   所以这里不认事件里的旧节点，而是按 data-i / data-gi 回到 DOM 里取当前那个。
+   用 click + e.detail>=2 而不是 dblclick，是因为 detail 由浏览器按点击次数给出，
+   与 DOM 是否被重建无关，更稳。 */
+function beginEditLb(lb){
+  if(!lb) return;
+  if(lb.contentEditable!=='true') lb.contentEditable='true';
+  lb.focus();
+  try{
+    const r=document.createRange(); r.selectNodeContents(lb);
+    const s=window.getSelection(); if(s){ s.removeAllRanges(); s.addRange(r); }
+  }catch(err){}
+}
+function dblEdit(e){
+  if(e.detail!=null && e.detail<2) return;    // 只认双击的第二下
+  const lb=e.target.closest ? e.target.closest('.lb') : null;
+  if(!lb) return;
+  const host=lb.closest('.item,.sub'); if(!host) return;
+  e.preventDefault(); e.stopPropagation();
+  const fresh = host.classList.contains('item')
+    ? document.querySelector('#nav .item[data-i="'+host.dataset.i+'"] .lb')
+    : document.querySelector('#nav .sub[data-gi="'+host.dataset.gi+'"] .lb');
+  beginEditLb(fresh || lb);
+}
+$('nav').addEventListener('click', dblEdit);        // 主路径：detail 由浏览器按点击次数给出，与 DOM 重建无关
+$('nav').addEventListener('dblclick', dblEdit);     // 兜底：个别环境不递增 detail 时仍可进入编辑
+
+/* ---------- 初始化 ---------- */
+if(S.content) $('elContent').innerHTML=S.content;
+if(S.extra){
+  if(S.extra.line1w) $('line1').style.width=S.extra.line1w+'px';
+  if(S.extra.line1h) $('line1').style.height=S.extra.line1h+'px';
+  if(S.extra.line2w) $('line2').style.width=S.extra.line2w+'px';
+  if(S.extra.line2h) $('line2').style.height=S.extra.line2h+'px';
+  if(S.extra.lineColor){ $('line1').style.background=S.extra.lineColor; $('line2').style.background=S.extra.lineColor; }
+  if(S.extra.triColor){ const poly=$('elTri').querySelector('polygon');
+                        if(poly) poly.style.fill=S.extra.triColor; }
+  if(S.extra.bgColor) $('elBg').style.background=S.extra.bgColor;
+}
+
+/* 恢复被拖动过的元素位置（logo / 白线 / 白底 / 三角 等） */
+function applyPos(){
+  ['navlogo','line1','line2','brand','pill','tri','slogan'].forEach(k=>{
+    const el=document.querySelector('[data-el="'+k+'"]'); if(!el) return;
+    if(S.extra[k+'X']!=null) el.style.left=S.extra[k+'X']+'px';
+    if(k!=='line1'&&k!=='line2' && S.extra[k+'Y']!=null) el.style.top =S.extra[k+'Y']+'px';
+  });
+  const img=$('elBrand').querySelector('img');
+  if(img){
+    if(S.extra.brandLogoW) img.style.width =S.extra.brandLogoW+'px';
+    if(S.extra.brandLogoH) img.style.height=S.extra.brandLogoH+'px';
+  }
+  if(S.extra.navLogoW) $('elNavLogo').style.width =S.extra.navLogoW+'px';
+  if(S.extra.navLogoH) $('elNavLogo').style.height=S.extra.navLogoH+'px';
+  const sg=$('elSlogan');
+  if(sg){
+    if(S.extra.sloganW) sg.style.width=S.extra.sloganW+'px';
+    if(S.extra.sloganColor) sg.style.color=S.extra.sloganColor;
+    if(S.extra.sloganFsPx){ const v=S.extra.sloganFsPx+'px'; sg.style.fontSize=v;
+      sg.querySelectorAll('.l1,.l2').forEach(x=>x.style.fontSize=v); }
+  }
+}
+renderAll(); applyPos(); fit();
+fillPick(null);          // 预填「切换元素」下拉，打开属性面板即可直接选
+</script>
+</body>
+</html>
