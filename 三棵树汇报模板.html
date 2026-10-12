@@ -3287,9 +3287,46 @@ function _ppSvgPng(svg){ return new Promise(function(res){ try{
 }catch(e){ res(null); } }); }
 function _ppTxt(slide,el,R,opt){ var t=el.innerText?el.innerText.replace(/\s+/g,' ').trim():''; if(!t) return; var r=R(el); var cs=getComputedStyle(el); var o=Object.assign({x:r.x,y:r.y,w:r.w,h:r.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(cs.fontSize),color:_ppRgb(cs.color)||'33473A',align:_ppAlign(el),valign:'top',lineSpacingMultiple:1.12},opt||{}); slide.addText(t,o); }
 function _ppTable(slide,table,R){ var rows=[]; table.querySelectorAll('tr').forEach(function(tr){ var row=[]; tr.querySelectorAll('td,th').forEach(function(td){ var cs=getComputedStyle(td); row.push({text:td.innerText.replace(/\s+/g,' ').trim(),options:{fontFace:'Microsoft YaHei',fontSize:_ppPt(cs.fontSize),color:_ppRgb(cs.color)||'3A4A40',bold:(cs.fontWeight==='bold'||cs.fontWeight==='700'),align:(cs.textAlign||'center'),valign:'middle',fill:{color:(_ppRgb(cs.backgroundColor)||'FFFFFF')}}}); }); rows.push(row); }); if(!rows.length) return; var r=R(table); slide.addTable(rows,{x:r.x,y:r.y,w:r.w,border:{type:'solid',color:'C9D3C9',pt:1},fontFace:'Microsoft YaHei',align:'center',valign:'middle',autoPage:false}); }
+/* 图表原生重建：从 .chart-wrap 的 data-chart 读回 {type,data,opts}，映射成 pptxgenjs 原生 chart 对象。
+   支持 bar/line/pie/doughnut/radar/area 直接对应；gauge→用 doughnut 近似；divergingBar→用 bar 近似（负值保留）。
+   原生 chart 可在 PowerPoint 里双击改数据（真·全可编辑）。 */
+function _ppChart(slide,wrap,R){
+  var raw=wrap.getAttribute('data-chart'); if(!raw) return;
+  var cfg; try{ cfg=JSON.parse(decodeURIComponent(raw)); }catch(e){ return; }
+  var type=cfg.type, data=cfg.data||[], opts=cfg.opts||{};
+  if(!data.length) return;
+  var r=R(wrap); var w=r.w||6, h=r.h||3.2;
+  var title=opts.title||'';
+  // 取色：优先 data[i].color（makeChart 已填默认调色板），否则用绿色系
+  var pal=['007F00','4CAF50','8BC34A','FF9800','FFC107','F57C00','795548','607D8B'];
+  var colors=data.map(function(d,i){ return (d.color||pal[i%pal.length]).replace('#',''); });
+  var labels=data.map(function(d){ return d.label; });
+  var values=data.map(function(d){ return d.value; });
+  var chartOpts={ x:r.x, y:r.y, w:w, h:h, chartColors:colors, showLegend:true, legendPos:'b', legendFontSize:9, catAxisLabelFontSize:9, valAxisLabelFontSize:9, dataLabelFontSize:9, dataLabelColor:'243A2A', title:title, titleFontSize:12, titleColor:'243A2A', titleFontFace:'Microsoft YaHei', catAxisLabelFontFace:'Microsoft YaHei', valAxisLabelFontFace:'Microsoft YaHei', dataLabelFontFace:'Microsoft YaHei', legendFontFace:'Microsoft YaHei' };
+  var barDir = (type==='divergingBar') ? 'bar' : (type==='horizontalBar' ? 'bar' : 'col');
+  try{
+    if(type==='bar'||type==='horizontalBar'||type==='divergingBar'){
+      slide.addChart('bar',[{ name:'系列', labels:labels, values:values }], Object.assign({}, chartOpts, { barDir:barDir, barGapWidthPct:30 }));
+    } else if(type==='line'||type==='area'){
+      slide.addChart('line',[{ name:'系列', labels:labels, values:values }], chartOpts);
+    } else if(type==='pie'||type==='doughnut'){
+      slide.addChart(type==='doughnut'?'doughnut':'pie',[{ name:'系列', labels:labels, values:values }], Object.assign({}, chartOpts, { holeSize:(type==='doughnut'?50:0), dataLabelFormatCode:'0', showPercent:(type==='pie'||type==='doughnut') }));
+    } else if(type==='radar'){
+      slide.addChart('radar',[{ name:'系列', labels:labels, values:values }], chartOpts);
+    } else if(type==='gauge'){
+      // 仪表盘：pptxgenjs 无原生 gauge，用单值 doughnut 近似（值 + 剩余量）
+      var val=(data[0]&&data[0].value)||0, maxV=opts.max||100;
+      var gaugeVals=[Math.max(0,Math.min(maxV,val)), Math.max(0,maxV-val)];
+      slide.addChart('doughnut',[{ name:'系列', labels:[(data[0]&&data[0].label)||'', '剩余'], values:gaugeVals }], Object.assign({}, chartOpts, { holeSize:65, showLegend:false, dataLabelFormatCode:'0' }));
+    } else {
+      // 兜底：未知类型退化成条形图
+      slide.addChart('bar',[{ name:'系列', labels:labels, values:values }], Object.assign({}, chartOpts, { barDir:'col' }));
+    }
+  }catch(e){ /* chart 失败则回退为 SVG 转 PNG 图片，保证不丢图 */ try{ if(typeof _ppSvgPng==='function'){ var svg=wrap.querySelector('svg'); if(svg){ _ppSvgPng(svg).then(function(p){ if(p) slide.addImage({data:p,x:r.x,y:r.y,w:w,h:h}); }); } } }catch(e2){} }
+}
 async function _ppWalk(slide,root,R,skipVisual){
-  /* 表格整张烤进背景图：既不画原生表格，也不再逐格叠加文字（避免重复绘制 / 极小框折行「字错位」） */
-  if(root && root.tagName==='TABLE') return;
+  /* 全可编辑：表格无论作为 root 还是子元素，都转原生 <a:tbl>（可逐格改字） */
+  if(root && root.tagName==='TABLE'){ if(!skipVisual) _ppTable(slide,root,R); return; }
   var kids=Array.from(root.children);
   for(var k=0;k<kids.length;k++){
     var ch=kids[k];
@@ -3298,9 +3335,39 @@ async function _ppWalk(slide,root,R,skipVisual){
     if(id==='handles'||id==='gfxHandles'||cls.indexOf('rh')>=0) continue;
     if(cls.indexOf('fig')>=0) continue;   // 图形/图标已烤进背景，跳过（避免被当成形状再画一次）
     if(!_ppVis(ch)) continue;
-    if(ch.tagName==='TABLE'){ continue; }  // 表格保真：整张烤进背景图，不再叠原生表格（避免线丢/字错位）
-    if(ch.tagName==='SVG'){ if(!skipVisual){ var p1=await _ppSvgPng(ch); if(p1){ var r1=R(ch); slide.addImage({data:p1,x:r1.x,y:r1.y,w:r1.w,h:r1.h}); } } continue; }
+    if(ch.tagName==='TABLE'){ if(!skipVisual) _ppTable(slide,ch,R); continue; }  // 全可编辑：表格用原生 <a:tbl>，可逐格改字
+    if(ch.tagName==='SVG'){ continue; }   // 图表不在 SVG 层处理，由 .rc-col-chart 分支读 data-chart 走原生 chart 对象
+    if(cls.indexOf('rc-col-chart')>=0){
+      // 全可编辑：图表从 data-chart 读回 type/data，用 pptxgenjs 原生 chart 对象重建（可双击改数据）
+      var cw=ch.querySelector('.chart-wrap');
+      if(cw && !skipVisual){ _ppChart(slide,cw,R); }
+      var cc=Array.from(ch.children);
+      for(var cj=0;cj<cc.length;cj++){ if(cc[cj].classList && cc[cj].classList.contains('chart-wrap')) continue; if(cc[cj].tagName!=='SVG') await _ppWalk(slide,cc[cj],R,skipVisual); }
+      continue;
+    }
     if(cls.indexOf('rc-2col')>=0||cls.indexOf('rc-col')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
+    /* 章节过渡页（封面）：原生导出保真 */
+    if(cls.indexOf('rc-cover-subitem')>=0){
+      // 子项入口卡片：白底圆角卡片 + 完整文字（含 <b> 前缀 + 裸文本）
+      var ri=R(ch);
+      if(!skipVisual) slide.addShape('roundRect',{x:ri.x,y:ri.y,w:ri.w,h:ri.h,fill:{color:'FFFFFF'},line:{color:'CFE0C8',width:1},rectRadius:0.08});
+      var it=ch.innerText.replace(/\s+/g,' ').trim();
+      if(it) slide.addText(it,{x:ri.x,y:ri.y,w:ri.w,h:ri.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:'243A2A',align:'center',valign:'middle',bold:false});
+      continue;
+    }
+    if(cls.indexOf('rc-cover-subs')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
+    if(cls.indexOf('rc-cover-sub')>=0){
+      // 导读徽章：浅绿底 + 深绿字 + 左侧竖条
+      var rs=R(ch);
+      if(!skipVisual){ slide.addShape('roundRect',{x:rs.x,y:rs.y,w:rs.w,h:rs.h,fill:{color:'EAF5EA'},line:{type:'none'},rectRadius:0.06}); slide.addShape('rect',{x:rs.x,y:rs.y,w:0.05,h:rs.h,fill:{color:'007F00'}}); }
+      var st=ch.innerText.replace(/\s+/g,' ').trim();
+      if(st) slide.addText(st,{x:rs.x+0.1,y:rs.y,w:rs.w-0.1,h:rs.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:'1F6B2E',align:'left',valign:'middle',bold:true});
+      continue;
+    }
+    if(cls.indexOf('rc-cover-title')>=0){ _ppTxt(slide,ch,R,{color:'243A2A',bold:true}); continue; }
+    if(cls.indexOf('rc-cover-num')>=0){ _ppTxt(slide,ch,R,{color:'007F00',bold:true}); continue; }
+    if(cls.indexOf('rc-cover-line')>=0){ if(!skipVisual){ var rl2=R(ch); slide.addShape('rect',{x:rl2.x,y:rl2.y,w:rl2.w,h:rl2.h,fill:{color:'007F00'}}); } continue; }
+    if(cls.indexOf('rc-cover')>=0){ await _ppWalk(slide,ch,R,skipVisual); continue; }
     if(cls.indexOf('rc-banner')>=0){
       var rb=R(ch);
       if(!skipVisual){ slide.addShape('roundRect',{x:rb.x,y:rb.y,w:rb.w,h:rb.h,fill:{color:'F5FBF3'},line:{color:'CFE6D2',width:1},rectRadius:0.04}); slide.addShape('rect',{x:rb.x,y:rb.y,w:0.06,h:rb.h,fill:{color:'007F00'}}); }
@@ -3326,13 +3393,6 @@ async function _ppWalk(slide,root,R,skipVisual){
         if(v){ var vr=R(v); slide.addText(v.textContent.trim(),{x:vr.x,y:vr.y,w:vr.w,h:vr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(v).fontSize),color:'007F00',bold:true,align:'center',valign:'middle'}); }
         if(l){ var lr=R(l); slide.addText(l.textContent.trim(),{x:lr.x,y:lr.y,w:lr.w,h:lr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(l).fontSize),color:_ppRgb(getComputedStyle(l).color)||'6A756C',align:'center',valign:'middle'}); }
       }
-      continue;
-    }
-    if(cls.indexOf('rc-col-chart')>=0){
-      var svg=ch.querySelector('svg');
-      if(!skipVisual && svg){ var p2=await _ppSvgPng(svg); if(p2){ var r2=R(svg); slide.addImage({data:p2,x:r2.x,y:r2.y,w:r2.w,h:r2.h}); } }
-      var cc=Array.from(ch.children);
-      for(var cj=0;cj<cc.length;cj++){ if(cc[cj].tagName!=='SVG'&&cc[cj]!==svg) await _ppWalk(slide,cc[cj],R,skipVisual); }
       continue;
     }
     if(cls.indexOf('rc-ul')>=0){ var ru=R(ch); slide.addText(Array.from(ch.children).map(function(li){return li.innerText.replace(/\s+/g,' ').trim();}),{x:ru.x,y:ru.y,w:ru.w,h:ru.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(ch).fontSize),color:_ppRgb(getComputedStyle(ch).color)||'33473A',align:'left',valign:'top',bullet:{indent:14},paraSpaceAfter:3}); continue; }
@@ -3433,38 +3493,32 @@ async function exportPptEditable(){
   var savedCur=cur, savedEdit=document.body.classList.contains('editing'), savedPresent=document.body.classList.contains('present');
   document.body.classList.remove('editing','present');
   document.body.classList.add('exporting');
-  var slideEl=$('slide'), nav=$('nav'), logo=$('elNavLogo');
+  var slideEl=$('slide'), nav=$('nav'), logo=$('elNavLogo'), bgEl=$('elBg');
   var savedStyle=slideEl.getAttribute('style')||'';
   for(var i=0;i<S.pages.length;i++){
     cur=i; renderAll(); fit();
     slideEl.style.transform='none'; slideEl.style.transformOrigin='top left';
     slideEl.style.marginLeft='0'; slideEl.style.marginTop='0';
     await _ppRaf(); await _ppRaf();
-    // 截图前再确认一次 1:1：防任何异步重排（ResizeObserver 补发的 fit 等）把 scale 加回来
     slideEl.style.transform='none'; slideEl.style.transformOrigin='top left';
     slideEl.style.marginLeft='0'; slideEl.style.marginTop='0';
     var sr=slideEl.getBoundingClientRect();
     if(sr.width<2||sr.height<2) continue;
-    // 每个元素都用「当下」的舞台矩形做基准：只要「元素矩形」与「舞台矩形」在同一次同步调用里取到，
-    // 二者必属同一坐标系；即便导出途中页面发生重排/缩放（字体加载、滚动条出现、图片插入等），
-    // 也不会出现文字整体错位 / 互相重叠（历史坑：曾因 sr 取值过早导致某一页标题跑到左下角）。
     var R=function(el){ var s=slideEl.getBoundingClientRect(); if(s.width<2||s.height<2) s=sr; var r=el.getBoundingClientRect(); return {x:Math.max(0,(r.left-s.left)/s.width*13.333),y:Math.max(0,(r.top-s.top)/s.height*7.5),w:Math.min(13.333,r.width/s.width*13.333),h:Math.min(7.5,r.height/s.height*7.5)}; };
     var ps=pptx.addSlide();
     ps.background={color:'FCFDFC'};
-    // 1) 整页高清截图作为底层：颜色/图标/图表/渐变 与屏幕 100% 一致（沿用 PDF/图片版已验证的 html2canvas 管线）
-    try{
-      var cvs=await html2canvas(slideEl,{backgroundColor:'#FCFDFC',scale:2,useCORS:true,logging:false,width:1280,height:720,windowWidth:1280,windowHeight:720,
-        onclone:function(doc){ var st=doc.createElement('style'); st.appendChild(doc.createTextNode('#elContent *{color:transparent !important; -webkit-text-fill-color:transparent !important;} #elContent table,#elContent table *{color:#3a4a40 !important; -webkit-text-fill-color:#3a4a40 !important;} #elContent .chart,#elContent .chart *{color:#000 !important; -webkit-text-fill-color:#000 !important;} #elPtitle,#elPtitle *{color:transparent !important; -webkit-text-fill-color:transparent !important;} #elBrand,#elBrand *{color:transparent !important; -webkit-text-fill-color:transparent !important;} #nav *{color:transparent !important; -webkit-text-fill-color:transparent !important;}')); (doc.head||doc.documentElement).appendChild(st); }
-      });
-      ps.addImage({data:cvs.toDataURL('image/png'),x:0,y:0,w:13.333,h:7.5});
-    }catch(e){}
-    // 2) 叠加可编辑原生文字（标题/品牌行/正文/卡片/KPI/横幅/表格单元格等），位置/字号/颜色均取自实时 DOM，落在截图文字原位之上
-    // 3) 侧栏章节名：背景已隐藏侧栏文字，此处覆盖为原生文本框 → 在 PowerPoint 里可改字（当前页高亮项取绿色，其余白色）
-    var pt=$('elPtitle'); if(pt && pt.textContent.trim()){ var rpt=R(pt); ps.addText(pt.textContent.trim(),{x:rpt.x,y:rpt.y,w:rpt.w,h:rpt.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(pt).fontSize),color:'0E5C2F',bold:true,align:'left',valign:'middle'}); }
-    var br=$('elBrand'); if(br && br.textContent.trim()){ var rbr=R(br); ps.addText(br.textContent.trim(),{x:rbr.x,y:rbr.y,w:rbr.w,h:rbr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(br).fontSize),color:_ppRgb(getComputedStyle(br).color)||'9AA79F',align:'right',valign:'middle'}); }
-    // 3) 侧栏章节名：覆盖为原生文本框，使其在 PowerPoint 里可改字（背景已隐藏侧栏文字，避免重复/错位）
+    // 1) 原生侧栏：绿色底板（覆盖整个左侧导航区，取 #elBg 实时宽高与颜色）
+    if(bgEl){ var rbg=R(bgEl); ps.addShape('rect',{x:rbg.x,y:rbg.y,w:rbg.w,h:rbg.h,fill:{color:_ppRgb(getComputedStyle(bgEl).backgroundColor)||'007F00'},line:{type:'none'}}); }
+    // 2) 导航 logo：内联 base64 图片直接嵌入（可移动/缩放）
+    if(logo && logo.tagName==='IMG'){ var rl=R(logo); try{ ps.addImage({data:logo.src,x:rl.x,y:rl.y,w:rl.w,h:rl.h}); }catch(e){} }
+    // 3) 右上角品牌行 #elBrand：若含图片 logo 则嵌图，否则叠文字
+    var br=$('elBrand'); if(br){ var bimg=br.querySelector('img'); if(bimg && bimg.src && bimg.src.indexOf('data:image')===0){ var rb=R(bimg); try{ ps.addImage({data:bimg.src,x:rb.x,y:rb.y,w:rb.w,h:rb.h}); }catch(e){} } else if(br.textContent.trim()){ var rbr=R(br); ps.addText(br.textContent.trim(),{x:rbr.x,y:rbr.y,w:rbr.w,h:rbr.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(br).fontSize),color:_ppRgb(getComputedStyle(br).color)||'9AA79F',align:'right',valign:'middle'}); } }
+    // 4) 页标题 #elPtitle：原生文本框（可改字）
+    var pt=$('elPtitle'); if(pt && pt.textContent.trim()){ var rpt=R(pt); ps.addText(pt.textContent.trim(),{x:rpt.x,y:rpt.y,w:rpt.w,h:rpt.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(getComputedStyle(pt).fontSize),color:_ppRgb(getComputedStyle(pt).color)||'0E5C2F',bold:true,align:'left',valign:'middle'}); }
+    // 5) 侧栏章节名：原生文本框（当前页高亮取绿、其余白），在 PowerPoint 里可改字
     if(nav){ var navItems=nav.querySelectorAll('.item'); for(var ni=0; ni<navItems.length; ni++){ var lb=navItems[ni].querySelector('.lb'); if(!lb||!lb.textContent.trim()) continue; var ncs=getComputedStyle(lb); var rlb=R(lb); ps.addText(lb.textContent.trim(),{x:rlb.x,y:rlb.y,w:rlb.w,h:rlb.h,fontFace:'Microsoft YaHei',fontSize:_ppPt(ncs.fontSize),color:_ppRgb(ncs.color)||'FFFFFF',bold:(ncs.fontWeight==='bold'||ncs.fontWeight==='700'),align:'left',valign:'middle',wrap:false}); } }
-    var content=$('elContent'); if(content){ await _ppWalk(ps,content,R,true); }
+    // 6) 正文：原生形状 + 原生文字 + 原生表格 + 原生图表（全可编辑，skipVisual=false）
+    var content=$('elContent'); if(content){ await _ppWalk(ps,content,R,false); }
   }
   document.body.classList.remove('exporting');   // 先解冻，末尾的 fit() 才能把屏幕缩放还原
   if(savedStyle) slideEl.setAttribute('style',savedStyle); else slideEl.removeAttribute('style');
