@@ -2,14 +2,14 @@
 name: sks-nav-html-template
 title: "三棵树导航式汇报模板（HTML 交互版）"
 description: 三棵树/马上住风格的 16:9 网页汇报模板——左侧绿色导航栏（含二级子项）、右上角 logo + 两行标语、PPT 式缩略图导航、全屏放映模式（含全屏失败降级与「浏览器打开」逃生口）、悬浮目录（点标题跳页）、章节可增删改、选中态白底+绿三角、全元素可点选可拖动、localStorage 持久化，单文件自包含可直接发给同事。当用户要「三棵树风格汇报页」「带左侧导航的 HTML 汇报」「可翻页可编辑的网页版 PPT」「要放映模式/悬浮目录」「马上住模板」时使用本技能。
-version: 1.9.28
+version: 1.9.29
 agent_created: true
 ---
 
 # 三棵树导航式汇报模板（HTML 交互版）
 
 还原自《【260803更新】马上住焕新事业部-马上住网点分析.pptx》实测规格。
-**单文件 HTML**（≈1263KB，图片已 base64 内联，并内联 pptxgenjs + html2canvas + jsPDF，离线即可导出 PDF / PPT），双击即开，可交互改章节，可直接发给别人。
+**单文件 HTML**（≈1289KB，图片已 base64 内联，并内联 pptxgenjs + html2canvas + jsPDF，离线即可导出 PDF / PPT），双击即开，可交互改章节，可直接发给别人。
 
 ## 何时使用
 - 「做个三棵树风格的汇报页 / 网页版 PPT」
@@ -68,9 +68,9 @@ agent_created: true
 
 | 文件 | 用途 |
 |---|---|
-| `三棵树汇报模板.html` | **成品**（v1.9.28，≈1.30MB，已内联 logo + pptxgenjs + html2canvas + jsPDF），直接复制改名即可用 |
+| `三棵树汇报模板.html` | **成品**（v1.9.29，≈1.29MB，已内联 logo + pptxgenjs + html2canvas + jsPDF），直接复制改名即可用 |
 | `三棵树汇报模板-v1.5-备份.html` | 旧成品留档（v1.5.x，≈119KB，无 PPT/PDF 导出能力），**不要用**，仅备查 |
-| `template.html` | 源模板（引用 `assets/`；**注意：这是 v1.5.x 遗留源码**，`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.28 成品） |
+| `template.html` | 源模板（引用 `assets/`；**注意：这是 v1.5.x 遗留源码**，`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.29 成品） |
 | `assets/nav_logo_x2.png` | 侧栏 logo（原稿内嵌图放大版，640×306） |
 | `assets/skshu_logo.png` | 右上角品牌 logo（官网 SVG 转 PNG） |
 | `scripts/pack.py` | 把 `template.html` 打包成自包含单文件 |
@@ -411,11 +411,20 @@ s.style.transform=(Math.abs(k-1)>0.002)?`scale(${k})`:'none';
     - **修法**：把 `#gfxHandles .rh` / `#gfxHandles .rh-del`（含 `:hover` 与 8 个方向 `cursor`）**并入 `#handles` 同一组选择器**。
     - **验证要用 `elementFromPoint`（关键）**：程序化 `dispatchEvent` 到 0 尺寸手柄**仍会触发**（它绕过命中测试），所以**不能**用"直接派发事件看宽高变化"来验证——必须用 `document.elementFromPoint(手柄x,手柄y)` 取"浏览器真实会命中的元素"，再对其派发 mousedown。修复前命中 `DIV.sb-bg`（背景）→ `RESIZED=false`；修复后命中 `DIV.rh.se`（手柄）→ 卡片 `666×169→930×375`。**另一条铁律**：新增/移动任何"覆盖层里的交互子元素"（手柄、浮层按钮），都要**同步检查它的 CSS 选择器是否覆盖了实际所在的那个 layer id**。
 
+31. **导出「原生对象但内容错乱/丢失」= async 叶子块被当布尔判真 + 富文本丢了（v1.9.29 修复）**：用户在 v1.9.28（已回归原生对象）基础上反馈「导出来乱乱的，侧边栏也不全，有的错位，有的消失」。根因五点，按致命度排序：
+    - **①（最致命）`async` 叶子块被当布尔判真 → 整页内容层全丢**：把块识别抽成独立 `async function _ppLeafBlock(slide,ch,R,skipVisual)`，但调用处写成 `if(_ppLeafBlock(...)) return;` —— **async 函数返回的是 Promise，永远是 truthy**，于是 `if` 恒真、`_ppWalk` 一进循环就 `return`，所有正文/卡片/图表/表格/列表全部跳过，只留下侧栏。这就是「有的消失 + 乱乱的」。**修法**：两处调用都加 `await` → `if(await _ppLeafBlock(...)) return;`（顶层 root 入口一处、`_ppWalk` 子循环一处）。**验证铁律**：凡是把 `async function` 当布尔条件用，先检查返回值是不是 Promise；诊断脚本里 `console.log('LEAF content el ent-fade =>', await _ppLeafBlock(...))` 打出来是 `[object Promise]` 就是中招信号。
+    - **② `rc-ul` 的 `<li>` 文字丢了，只剩 `rc-tag` 小标签**：`rc-card` 会经 `_ppWalk` 递归进子节点，于是 `.rc-ul` 是以 **`root` 身份**被父级递归进来的，原本写在 `_ppWalk` 子循环里的 `rc-ul` 分支永远命中不了（和 v1.9.21 表格 `continue` 失效同一类坑），`<li>` 正文全被当成普通文本折行、和标签挤在一起。抽成叶子块后 `_ppWalk` 顶层先 `if(await _ppLeafBlock(root,...)) return;` 即可命中。
+    - **③ `rc-insight`「洞察卡」丢了渐变底 + 绿点 + 项目符号**：原本没有专门分支，整块被当成普通文本。新增 `.rc-insight` 分支：`addShape('roundRect',{fill:F2F8F2,line:DBEAD9})` + 标题前 `addShape('ellipse',{fill:4CAF50})` 绿点 + 列表用 **逐段对象** `{text, options:{bullet:{indent:14}}}` 传 `addText`（注意：`bullet` 必须放在每段 `options` 里，不能放在字符串数组顶层，否则 pptxgenjs 报「Cannot create property 'options' on string」）。
+    - **④ `rc-tag` 颜色丢了（绿/橙/红）**：原本整块按单色导出，标签的三色语义（ok→`1B7A2F` / note→`E65100` / warn→`C62828`）没了。新增 `_ppNodeRuns(el)` 把 `.rc-tag` 和 `<b>/<strong>` 拆成富文本 run：`slide.addText([{text, options:{color,bold}}, ...])`，颜色按 class 映射。
+    - **⑤ 侧栏/导航窄文字被 `margin` 挤折行错位**：pptxgenjs `addText` 默认 `margin≈0.05in`，窄栏文字（章节名、KPI 数值、横幅标题）被挤成两行、缩进错位。统一在导出 `addText` 上加 `margin:0`，并给单行场景补 `wrap:false` + `valign:'middle'`；`rc-banner-t` / `rc-card-h` / `rc-kpi .v/.l` 等内联 `addText` 同样补 `margin:0`。
+    - **Z 序**：白底高亮胶囊 `#elPill` 必须在章节名文字**之前** `addShape`，否则文字被盖住（侧栏「不全」的一例）。
+    - **验证口径（必须真跑，别信无头截图）**：无头 `ent-fade` 会把 `#elContent` 留在 `opacity:0`，探针必须**手动强制 `opacity:1`** 再 `_ppWalk`，否则会误以为「又丢了」；但**真实导出**靠 `body.exporting #elContent{opacity:1!important}` 强制可见，无需手动。正确验证 = playwright 钩住 pptxgenjs 的 `addText/addShape/addChart/addTable/addImage`，跑 `exportPptEditable()`，统计每页对象数 + 抽查关键文本：15 页应得 **647 个对象、0 报错**；抽查应命中 `rc-ul` 全文（如「内墙涂料、外墙涂料：贡献 58.7% 营收」）、`rc-tag` 三色、`addChart` 雷达、`rc-insight` 底+点+项目符号、`rc-cover` 封面字段。
+
 
 ## 分享给别人
 
 **发成品给别人（最常见）**
-- 只发 `三棵树汇报模板.html` 一个文件（v1.9.26 ≈1.27MB，已内联全部依赖），**不用附带 assets 文件夹**
+- 只发 `三棵树汇报模板.html` 一个文件（v1.9.29 ≈1.29MB，已内联全部依赖），**不用附带 assets 文件夹**
 - 对方双击即开（Chrome / Edge / 360 均可），无需装 Office、无需联网
 - ⚠️ **改动存在各自浏览器 localStorage 里，不会随文件走**：
   你在自己电脑上改的章节，同事打开仍是默认 5 章。
