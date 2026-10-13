@@ -69,11 +69,13 @@ agent_created: true
 | 文件 | 用途 |
 |---|---|
 | `三棵树汇报模板.html` | **成品**（v1.9.29，≈1.29MB，已内联 logo + pptxgenjs + html2canvas + jsPDF），直接复制改名即可用 |
+| `README.md` | GitHub 仓库落地页安装指引（v1.9.29，准确） |
+| `先看我-安装说明.md` | 详细中文安装 / 使用说明（v1.9.29，准确） |
 | `三棵树汇报模板-v1.5-备份.html` | 旧成品留档（v1.5.x，≈119KB，无 PPT/PDF 导出能力），**不要用**，仅备查 |
-| `template.html` | 源模板（引用 `assets/`；**注意：这是 v1.5.x 遗留源码**，`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.29 成品） |
+| `template.html` | ⚠️ **v1.5.x 遗留源码**，引用 `assets/`；`pack.py` 由它打包出的仍是旧版，别拿它覆盖上面那份 v1.9.29 成品 |
 | `assets/nav_logo_x2.png` | 侧栏 logo（原稿内嵌图放大版，640×306） |
 | `assets/skshu_logo.png` | 右上角品牌 logo（官网 SVG 转 PNG） |
-| `scripts/pack.py` | 把 `template.html` 打包成自包含单文件 |
+| `scripts/pack.py` | ⚠️ **v1.5.x 遗留打包脚本**，仅源码打包用，勿用于 v1.9.x |
 
 ## 两条使用路径
 
@@ -94,11 +96,12 @@ cp "三棵树汇报模板.html" "<工作区>/<报告名>.html"
 >
 > 也可以提示用户用文件里的 **⧉ 浏览器打开** 按钮，效果一样。
 
-**B. 改了模板源码（或要预置章节）后重打包**
+**B. 要预置章节 / 改默认文案（进阶）**
+> ⚠️ **`template.html` + `scripts/pack.py` 是 v1.5.x 遗留源码，别用**——用它打包会退回旧版、丢掉 PPT 导出与全部修复。
+> v1.9.x 的 `三棵树汇报模板.html` 已是**自包含单文件**（含全部源码），直接编辑它即可：
 ```bash
-# 1) 编辑 template.html：改 DEFAULT.pages 预置章节 / 改配色 / 改默认文案
-# 2) 打包（把两张 logo 转 base64 内联 → 单文件）
-python scripts/pack.py "<工作区>/<报告名>.html"
+# 1) 用编辑器打开 三棵树汇报模板.html，改 DEFAULT.pages 预置章节 / 改配色 / 改默认文案
+# 2) 另存为你的报告名.html，直接交付（无需再打包，logo 已内联）
 ```
 
 ## 实测规格（改版时别改坏这些值）
